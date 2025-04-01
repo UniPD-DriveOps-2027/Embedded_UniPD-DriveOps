@@ -1,0 +1,28 @@
+09:24:43 **** Incremental Build of configuration Debug for project BFMC_F401RE ****
+make -j8 all 
+arm-none-eabi-g++ "../Core/Src/mainpp.cpp" -mcpu=cortex-m4 -std=gnu++14 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F401xE -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-use-cxa-atexit -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/mainpp.d" -MT"Core/Src/mainpp.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/mainpp.o"
+In file included from ../Core/Src/mainpp.cpp:12:
+../Core/Inc/pid.h:93: warning: ignoring '#pragma diag_suppress ' [-Wunknown-pragmas]
+   93 |         #pragma diag_suppress 177     /* Disable 'unused function' warning */
+      | 
+In file included from ../Core/Inc/ros.h:39,
+                 from ../Core/Src/mainpp.cpp:9:
+../Core/Inc/STM32Hardware.h: In member function 'void STM32Hardware::write(uint8_t*, int)':
+../Core/Inc/STM32Hardware.h:118:22: warning: comparison of integer expressions of different signedness: 'int' and 'long unsigned int' [-Wsign-compare]
+  118 |       int n_tail = n <= tbuflen - twind ? n : tbuflen - twind;
+      |                    ~~^~~~~~~~~~~~~~~~~~
+arm-none-eabi-g++ -o "BFMC_F401RE.elf" @"objects.list"   -mcpu=cortex-m4 -T"/home/eugen/Desktop/STM32_Workspace/BFMC_Embedded/STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BFMC_F401RE.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+/home/eugen/st/stm32cubeide_1.18.0/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.linux64_1.0.0.202410170706/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld: warning: BFMC_F401RE.elf has a LOAD segment with RWX permissions
+Finished building target: BFMC_F401RE.elf
+ 
+arm-none-eabi-size  BFMC_F401RE.elf 
+arm-none-eabi-objdump -h -S BFMC_F401RE.elf  > "BFMC_F401RE.list"
+   text	   data	    bss	    dec	    hex	filename
+  52472	    500	  55808	 108780	  1a8ec	BFMC_F401RE.elf
+Finished building: default.size.stdout
+ 
+Finished building: BFMC_F401RE.list
+ 
+
+09:24:43 Build Finished. 0 errors, 3 warnings. (took 782ms)
+

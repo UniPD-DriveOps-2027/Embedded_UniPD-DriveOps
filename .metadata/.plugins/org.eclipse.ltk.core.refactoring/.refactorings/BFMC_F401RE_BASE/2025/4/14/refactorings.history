@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;BFMC_F401RE_BASE/BFMC_F401RE.ioc&apos; to &apos;BFMC_F401RE_BASE.ioc&apos;" description="Rename resource &apos;BFMC_F401RE.ioc&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="BFMC_F401RE.ioc" name="BFMC_F401RE_BASE.ioc" stamp="1743542002956" updateReferences="true"/>
-</session>

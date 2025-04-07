@@ -219,12 +219,11 @@ class PID
 	double          _outMin;
 	double          _outMax;
 	
-    static const uint8_t 	_pFilterWindow = 5;  			// Default moving average window size
-    double 					_pBuffer[_pFilterWindow];       // Buffer to store P-term history
-    uint8_t 				_pBufferIndex;                  // Current position in buffer
-    double 					_pSum;                          // Sum of buffer values
-    uint8_t 				_pWindowSize;                   // Configurable window size
-    double 					_filteredP;					 	// Stores filtered P-term value
+    static const uint16_t  _P_FILTER_WINDOW = 3000;  // Fixed window size
+    double          _pBuffer[3000];                  // Storage for P-term history
+    uint16_t        _pBufferIndex;                   // Current position in buffer
+    double          _pSum;                           // Running sum of buffer
+    bool            _usePFilter;					 // Flag to enable/disable filtering
 
 
 	public:
@@ -265,11 +264,8 @@ class PID
 	double GetKi(void);
 	double GetKd(void);
 	
-	/* ::::::: Set Sampling Window ::::::: */
-	void SetProportionalFilterWindow(uint8_t windowSize);
-
-	/* ::::::: Get Filtered P ::::::: */
-    double GetFilteredProportional() { return _filteredP; }
+	/* ::::::: Proportional Filter ::::::: */
+	void EnableProportionalFilter(bool enable) { _usePFilter = enable; }
 
 };
 

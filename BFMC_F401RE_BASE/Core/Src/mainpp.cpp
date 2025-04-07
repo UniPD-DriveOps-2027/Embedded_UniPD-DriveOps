@@ -24,7 +24,7 @@
 #define STEER_DEG2PWM_OFFSET	0.07620			// [pwm]
 #define MOTOR_SPEED_OFFSET 		0.075568        // [pwm]: The zero default where motors are stop
 #define M_PPI					6.28318530718	//	2*pi
-#define WHEEL_RADIUS			0.03			// [m]
+#define WHEEL_RADIUS			0.0335// [m]
 #define MAX_FORWARD_SPEED		1.0				// [m/s]
 #define MAX_BACKWARD_SPEED		-0.5			// [m/s]
 #define MAX_FORWARD_PWM_SPEED   0.009
@@ -71,15 +71,15 @@ float adcValue = 0;
 // DEBUGGING
 uint8_t counter;
 float input,output,setpoint;
-float KP=0.012, KI=0.0, KD=0.0;
-uint8_t pFilterWindow = 5;
+float KP=0.020001, KI=0.025001, KD=0.0;
+uint16_t pFilterWindow = 3000;
 float filtered_p = 0;
 float raw_p = 0;
 
 uint8_t samplingPID = (uint8_t)((ENC_COUNT_MAX + 1) / 1e3); // [ms]
 
 // CONTROLLERS PID 			 (Input,     Output,    Setpoint) 0.0075, 0.15, 0.00015
-PID SpeedController 	= PID(&carSpeed, &motorPWM, &speedRef, 0.012, 0.0, 0.0 ,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
+PID SpeedController 	= PID(&carSpeed, &motorPWM, &speedRef, 0.02, 0.025, 0.0 ,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
 PID PositionController 	= PID(&localDistance, &speedTargetPos, &localDistanceRef, 6, 0.0, 3,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
 
 
@@ -182,18 +182,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		// ---------- ACTUATION - SPEED ----------
 		//if(abs(motorPWM)<0.002) motorPWM = 0;
-		drive_pwm(motorPWM);
+
+		if(abs(speedRef) == 0.00)
+			drive_pwm(0);
+		else
+			drive_pwm(motorPWM);
+
+		//drive_pwm(speedTarget);
 
 		//for plotting on SWM graph
-		input=(float)carSpeed;
-		output=(float)motorPWM * 100;
-		setpoint=(float)speedRef;
-		filtered_p = SpeedController.GetFilteredProportional();
-		raw_p = SpeedController.GetKp() * (speedRef - carSpeed);
+		//input=(float)carSpeed;
+		//output=(float)motorPWM * 100;
+		//setpoint=(float)speedRef;
+		//filtered_p = SpeedController.GetFilteredProportional();
+		//raw_p = SpeedController.GetKp() * (speedRef - carSpeed);
 
-		//input=(float)localDistance;
-		//output=(float)speedTargetPos;
-		//setpoint=(float)localDistanceRef;
+		input=(float)localDistance;
+		output=(float)speedTargetPos;
+		setpoint=(float)localDistanceRef;
 
 		// ---------- RESET ENCODER COUNTER ----------
 		__HAL_TIM_SET_COUNTER(&htim4,0);
@@ -234,14 +240,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 		//Update PID gains
 		printf("KP = %f , KI = %f , KD = %f \r\n",KP,KI,KD);
-		SpeedController.SetTunings((double)KP,(double)KI,(double)KD);
-		SpeedController.SetProportionalFilterWindow(pFilterWindow);
+		SpeedController.EnableProportionalFilter(true);
+		//SpeedController.SetTunings((double)KP,(double)KI,(double)KD);
+		//SpeedController.SetProportionalFilterWindow(pFilterWindow);
 		//SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 		//SpeedController.SetOutputLimits(-0.009, 0.0119);// PWM Output limits
 		//SpeedController.SetSampleTime(samplingPID);// set sample time in [ms]
 
-		//PositionController.SetTunings((double)KP,(double)KI,(double)KD);
-		//PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
+		PositionController.SetTunings((double)KP,(double)KI,(double)KD);
+		PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 		//PositionController.SetOutputLimits(-0.2, 0.2);// PWM Output limits
 		//PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
 
@@ -267,12 +274,14 @@ void setup(void)
 	SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 	SpeedController.SetOutputLimits(-0.009, 0.0119);// PWM Output limits
 	SpeedController.SetSampleTime(samplingPID);// set sample time in [ms]
-	SpeedController.SetProportionalFilterWindow(0);
+	SpeedController.EnableProportionalFilter(true);
+	//SpeedController.SetProportionalFilterWindow(0);
 
 	// Set PID POSITION controller parameters
 	PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 	PositionController.SetOutputLimits(-0.2, 0.2);// Speed Output limits [m/s]
 	PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
+	PositionController.EnableProportionalFilter(false);
 
 	// Start TIMERS
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// DC MOTOR PWM
@@ -400,7 +409,7 @@ void drive_pwm(float pwm_value){
 bool isClose(double A, double B)
 {
 	double diff = A - B;
-	return (abs(diff) < EPSILON) ;//&& (abs(last_diff-diff) < EPSILON_DIFF) ;
+	return (abs(diff) < 0.001) ;//&& (abs(last_diff-diff) < EPSILON_DIFF) ;
 	//last_diff = diff;
 }
 

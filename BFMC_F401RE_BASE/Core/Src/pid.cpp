@@ -20,22 +20,25 @@
 
 #include "pid.h"
 
+#include "string.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* ~~~~~~~~~~~~~~~~ Constructor ~~~~~~~~~~~~~~~~ */
 PID::PID() :
 _pBufferIndex(0),
 _pSum(0.0),
-_pWindowSize(_pFilterWindow),
-_filteredP(0.0)
+_usePFilter(false)
 {
-	memset(_pBuffer, 0, sizeof(_pBuffer));  // Initialize buffer to 0
+memset(_pBuffer, 0, sizeof(_pBuffer));  // Initialize buffer to 0
 }
 
 PID::PID(double *Input, double *Output, double *Setpoint, double Kp, double Ki, double Kd, PIDPON_TypeDef POn, PIDCD_TypeDef ControllerDirection):
     	_pBufferIndex(0),
 		_pSum(0.0),
-		_pWindowSize(_pFilterWindow),
-		_filteredP(0.0)
+_usePFilter(false)
 {
 
 	/* ~~~~~~~~~~ Set parameter ~~~~~~~~~~ */
@@ -143,6 +146,12 @@ uint8_t PID::Compute(void)
 
 		_outputSum += (_ki * error);
 
+	    // Reset integral sum when stationary
+		if (abs(*_mySetpoint) < 0.01 && abs(*_myInput) < 0.01)
+	    {
+	        _outputSum = 0.0;  // Clear accumulated integral term
+	    }
+
 		/* ..... Add Proportional on Measurement, if P_ON_M is specified ..... */
 		if (!_pOnE)
 		{
@@ -170,14 +179,19 @@ uint8_t PID::Compute(void)
 		{
 			double rawP = _kp * error;
 
-			// Update moving average buffer
-			_pSum -= _pBuffer[_pBufferIndex];
-			_pBuffer[_pBufferIndex] = rawP;
-			_pSum += rawP;
-			_pBufferIndex = (_pBufferIndex + 1) % _pWindowSize;
-
-		    _filteredP = _pSum / _pWindowSize;  // Store filtered value
-		    output = _filteredP;                // Use filtered P
+            if(_usePFilter)  // Only filter if enabled
+            {
+                // Update moving average buffer
+                _pSum -= _pBuffer[_pBufferIndex];
+                _pBuffer[_pBufferIndex] = rawP;
+                _pSum += rawP;
+                _pBufferIndex = (_pBufferIndex + 1) % 3000;
+                output = _pSum / 3000;
+                //printf("Filter Active | Index: %d | Sum: %.3f | Output: %.3f\n", _pBufferIndex, _pSum, output);
+            }
+            else{
+            	output = rawP;
+            }
 		}
 		else
 		{
@@ -380,15 +394,3 @@ double PID::GetKd(void)
 }
 
 
-/* ~~~~~~~~~~~~~ Set Filter window ~~~~~~~~~~~~~ */
-void PID::SetProportionalFilterWindow(uint8_t windowSize)
-{
-    if (windowSize < 1) windowSize = 1;
-    if (windowSize > _pFilterWindow) windowSize = _pFilterWindow;
-
-    _pWindowSize = windowSize;
-    memset(_pBuffer, 0, sizeof(_pBuffer));
-    _pSum = 0.0;
-    _pBufferIndex = 0;
-    _filteredP = 0;
-}

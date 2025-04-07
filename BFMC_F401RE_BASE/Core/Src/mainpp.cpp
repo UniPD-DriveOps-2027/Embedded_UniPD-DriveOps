@@ -197,9 +197,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//filtered_p = SpeedController.GetFilteredProportional();
 		//raw_p = SpeedController.GetKp() * (speedRef - carSpeed);
 
-		input=(float)localDistance;
-		output=(float)speedTargetPos;
-		setpoint=(float)localDistanceRef;
+		//input=(float)localDistance;
+		//output=(float)speedTargetPos;
+		//setpoint=(float)localDistanceRef;
 
 		// ---------- RESET ENCODER COUNTER ----------
 		__HAL_TIM_SET_COUNTER(&htim4,0);
@@ -226,6 +226,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 		stop(0.0);
 
 		// Used for scalling the Graph in debugging, press twice the blue button so it gets scalled
+		/*
 		if (counter % 2 == 0){
 			input=-1;
 			output=-1;
@@ -237,18 +238,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 			setpoint=1;
 		}
 		counter++;
+		 */
 
 		//Update PID gains
-		printf("KP = %f , KI = %f , KD = %f \r\n",KP,KI,KD);
-		SpeedController.EnableProportionalFilter(true);
+		//printf("KP = %f , KI = %f , KD = %f \r\n",KP,KI,KD);
+		//SpeedController.EnableProportionalFilter(true);
 		//SpeedController.SetTunings((double)KP,(double)KI,(double)KD);
 		//SpeedController.SetProportionalFilterWindow(pFilterWindow);
 		//SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 		//SpeedController.SetOutputLimits(-0.009, 0.0119);// PWM Output limits
 		//SpeedController.SetSampleTime(samplingPID);// set sample time in [ms]
 
-		PositionController.SetTunings((double)KP,(double)KI,(double)KD);
-		PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
+		//PositionController.SetTunings((double)KP,(double)KI,(double)KD);
+		//PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
 		//PositionController.SetOutputLimits(-0.2, 0.2);// PWM Output limits
 		//PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
 
@@ -302,8 +304,8 @@ void setup(void)
 
 void loop(void)
 {
-
-	adcValue = readADC();
+	// read line detection sensor
+	//adcValue = readADC();
 
 	if (nh.connected())
 	{

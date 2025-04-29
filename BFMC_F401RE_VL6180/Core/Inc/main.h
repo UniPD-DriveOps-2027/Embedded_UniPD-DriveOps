@@ -81,6 +81,8 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define MOTOR_PWM_Pin GPIO_PIN_6
 #define MOTOR_PWM_GPIO_Port GPIOC
+#define TOF_XSHUT_Pin GPIO_PIN_9
+#define TOF_XSHUT_GPIO_Port GPIOC
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

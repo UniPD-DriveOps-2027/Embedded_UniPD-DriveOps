@@ -174,28 +174,28 @@ uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 		return 1;
 	}
 
-	*distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
+ *distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
 	VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
 	return 0;
 }
  */
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
-    uint32_t start_time = HAL_GetTick();  // Get start time in milliseconds
-    uint32_t timeout_ms = 70;             // Timeout after x milliseconds
+	uint32_t start_time = HAL_GetTick();  // Get start time in milliseconds
+	uint32_t timeout_ms = 70;             // Timeout after x milliseconds
 
-    VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
+	VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
 
-    // Wait for measurement to complete or timeout
-    while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
-        if ((HAL_GetTick() - start_time) > timeout_ms) {
-            printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
-            return 1;
-        }
-    }
+	// Wait for measurement to complete or timeout
+	while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
+		if ((HAL_GetTick() - start_time) > timeout_ms) {
+			printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
+			return 1;
+		}
+	}
 
-    *distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
-    VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
-    return 0;
+	*distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
+	VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
+	return 0;
 }
 
 
@@ -261,132 +261,180 @@ uint8_t i2c_Initialization(){
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
-	/* USER CODE BEGIN 1 */
+  /* USER CODE BEGIN 1 */
+	uint8_t tof_sensors = 0;	// flag to use TOF sensors
+	uint8_t line_sensors5 = 0;	// flag to use 5 line sensors
+	uint8_t line_sensor1 = 1;	// flag to use 1 line sensor
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_USART2_UART_Init();
+  MX_TIM4_Init();
+  MX_TIM10_Init();
+  MX_TIM11_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_I2C1_Init();
+  MX_TIM1_Init();
+  MX_ADC1_Init();
+  /* USER CODE BEGIN 2 */
+
+	/* TOF code */
 	uint8_t distance1 = 0, distance2 = 0;
-	/* USER CODE END 1 */
+	if (tof_sensors == 1) {
+		printf("Start initialization TOF sensors \r\n");
 
-	/* MCU Configuration--------------------------------------------------------*/
+		switch(i2c_Initialization()) {
+		case 0:
+			printf("TOF sensors ready!\r\n");
+			break;
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+		case 1:
+			printf("Sensor 1 initialization failed!\r\n");
+			break;
 
-	/* USER CODE BEGIN Init */
-	/* USER CODE END Init */
+		case 2:
+			printf("Sensor 2 initialization failed!\r\n");
+			break;
 
-	/* Configure the system clock */
-	SystemClock_Config();
+		case 3:
+			printf("Sensor 2 not connected!\r\n");
+			break;
 
-	/* USER CODE BEGIN SysInit */
-	/* USER CODE END SysInit */
-
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_USART2_UART_Init();
-	MX_TIM4_Init();
-	MX_TIM10_Init();
-	MX_TIM11_Init();
-	MX_TIM2_Init();
-	MX_TIM3_Init();
-	MX_I2C1_Init();
-	MX_TIM1_Init();
-	MX_ADC1_Init();
-
-	/* USER CODE BEGIN 2 */
-
-	printf("Start initialization TOF sensors \r\n");
-
-	switch(i2c_Initialization()) {
-	case 0:
-		printf("TOF sensors ready!\r\n");
-		break;
-
-	case 1:
-		printf("Sensor 1 initialization failed!\r\n");
-		break;
-
-	case 2:
-		printf("Sensor 2 initialization failed!\r\n");
-		break;
-
-	case 3:
-		printf("Sensor 2 not connected!\r\n");
-		break;
-
-	default:
-		printf("Unknown initialization error!\r\n");
-		break;
+		default:
+			printf("Unknown initialization error!\r\n");
+			break;
+		}
 	}
-	/* USER CODE END 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
+	/* 5 line sensors code */
+	uint8_t sensor5_1 = 0; // OUT1
+	uint8_t sensor5_2 = 0; // OUT2
+	uint8_t sensor5_3 = 0; // OUT3
+	uint8_t sensor5_4 = 0; // OUT4
+	uint8_t sensor5_5 = 0; // OUT5
+	if (line_sensors5 == 1) {
+		printf("Testing 5 sensors IR array module...\r\n");
+
+	}
+
+	/* 1 line sensor code */
+	GPIO_PinState sensor1;
+	if (line_sensor1 == 1) {
+		printf("Testing 1 sensor IR...\r\n");
+	}
+
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 	while (1) {
-		if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
-			printf("Sensor 1 Distance: %d mm\r\n", distance1);
+
+		if (tof_sensors == 1) {
+			if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
+				printf("Sensor 1 Distance: %d mm\r\n", distance1);
+			}
+			if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
+				printf("Sensor 2 Distance: %d mm\r\n", distance2);
+			}
 		}
-		if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
-			printf("Sensor 2 Distance: %d mm\r\n", distance2);
+
+		if (line_sensors5 == 1) {
+			sensor5_1 = !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2); // OUT1
+			sensor5_2 = !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1); // OUT2
+			sensor5_3 = !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15); // OUT3
+			sensor5_4 = !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14); // OUT4
+			sensor5_5 = !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13); // OUT5
+
+			// print low when detect
+			printf("Sensors: %d %d %d %d %d\r\n", sensor5_1, sensor5_2, sensor5_3, sensor5_4, sensor5_5);
 		}
+
+		if (line_sensor1 == 1) {
+			sensor1 = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
+
+			// print low when detect
+			printf("Sensor: %d \r\n", sensor1);
+		}
+
+
 		HAL_Delay(100);
 	}
-	/* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
-	/* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
 
-	/* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	 */
-	__HAL_RCC_PWR_CLK_ENABLE();
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
 
-	/** Initializes the RCC Oscillators according to the specified parameters
-	 * in the RCC_OscInitTypeDef structure.
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	RCC_OscInitStruct.PLL.PLLM = 16;
-	RCC_OscInitStruct.PLL.PLLN = 336;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-	RCC_OscInitStruct.PLL.PLLQ = 7;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		Error_Handler();
-	}
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-	/** Initializes the CPU, AHB and APB buses clocks
-	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-			|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-	{
-		Error_Handler();
-	}
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -403,33 +451,33 @@ int _write(int file, char *ptr, int len)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1)
 	{
 	}
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	/* USER CODE BEGIN 6 */
+  /* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

@@ -74,10 +74,11 @@ char uart_buf[50];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-//uint8_t VL6180X_WriteReg(uint16_t reg, uint8_t value);
-//uint8_t VL6180X_ReadReg(uint16_t reg);
-//uint8_t VL6180X_Init(void);
-//uint8_t VL6180X_ReadDistance(uint8_t *distance);
+uint8_t VL6180X_WriteReg(uint8_t sensor_addr, uint16_t reg, uint8_t value);
+uint8_t VL6180X_ReadReg(uint8_t sensor_addr, uint16_t reg);
+uint8_t VL6180X_Init(uint8_t sensor_addr);
+uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance);
+uint8_t i2c_Initialization();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -152,25 +153,110 @@ uint8_t VL6180X_Init(uint8_t sensor_addr) {
 	return 0;
 }
 
+/*
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 	VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
 	while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0);
-	*distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
+ *distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
 	VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
 	return 0;
 }
 
-void I2C_Scan() {
+uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
+	uint32_t timeout = 10000;
+	VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
+
+	// Wait for measurement to complete or timeout
+	while (((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) && (--timeout > 0));
+
+	if (timeout == 0) {
+		printf("[ReadDiscance] Timeout occurred, sensor didn't respond\r\n");
+		return 1;
+	}
+
+	*distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
+	VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
+	return 0;
+}
+ */
+uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
+    uint32_t start_time = HAL_GetTick();  // Get start time in milliseconds
+    uint32_t timeout_ms = 70;             // Timeout after x milliseconds
+
+    VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
+
+    // Wait for measurement to complete or timeout
+    while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
+        if ((HAL_GetTick() - start_time) > timeout_ms) {
+            printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
+            return 1;
+        }
+    }
+
+    *distance = VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_VAL);
+    VL6180X_WriteReg(sensor_addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
+    return 0;
+}
+
+
+uint8_t i2c_Initialization(){
+	/* Sensor 1 has the shutdown signal and is off */
+
+	/* Initialization sensor 2 */
 	uint8_t found = 0;
-	printf("Scanning I2C bus...\r\n");
 	for (uint8_t addr = 1; addr < 127; addr++) {
 		HAL_StatusTypeDef res = HAL_I2C_IsDeviceReady(&hi2c1, addr << 1, 3, 10);
+
+		/* Here it find only one device with address 0x29
+		 *
+		 * May happen is found one device with address 0x30
+		 * in that case the sensor is not resetted
+		 *
+		 * Take care in case of sensor swapping one may
+		 * keep the other address for a bit
+		 */
+
 		if (res == HAL_OK) {
-			printf("Device found at: 0x%02X\r\n", addr);
+			//printf("Device found at: 0x%02X\r\n", addr);
 			found++;
+
+			if (addr == VL6180X_SENSOR1_ADDR) {
+				// Initialize sensor 2 using default address 0x29
+				if(VL6180X_Init(VL6180X_SENSOR1_ADDR) != 0) {
+					return 2;
+				}
+
+				// Change address of sensor 2 to 0x30
+				HAL_Delay(50);
+				VL6180X_WriteReg(VL6180X_SENSOR1_ADDR, VL6180X_REG_I2C_SLAVE_DEV_ADDR, VL6180X_SENSOR2_ADDR);
+				HAL_Delay(50);
+				break;
+			}
+
+			if (addr == VL6180X_SENSOR2_ADDR) {
+				/* Here sensor 2 is already initialized
+				 * just brake the for and keep going
+				 */
+				break;
+			}
 		}
 	}
-	printf("Found %d devices.\r\n", found);
+	if (found == 0) {
+		return 3;
+	}
+
+	/* Initialization sensor 1 */
+
+	// Turn on sensor 1
+	HAL_Delay(50);
+	HAL_GPIO_WritePin(TOF_XSHUT_PORT, TOF_XSHUT_PIN, GPIO_PIN_SET);
+	HAL_Delay(50);
+
+	// Initialize sensor 1 using default address 0x29
+	if(VL6180X_Init(VL6180X_SENSOR1_ADDR) != 0) {
+		return 1;
+	}
+	return 0;
 }
 /* USER CODE END 0 */
 
@@ -191,14 +277,12 @@ int main(void)
 	HAL_Init();
 
 	/* USER CODE BEGIN Init */
-
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
 	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
@@ -213,43 +297,42 @@ int main(void)
 	MX_I2C1_Init();
 	MX_TIM1_Init();
 	MX_ADC1_Init();
+
 	/* USER CODE BEGIN 2 */
 
-	I2C_Scan();
+	printf("Start initialization TOF sensors \r\n");
 
-	// Change address
+	switch(i2c_Initialization()) {
+	case 0:
+		printf("TOF sensors ready!\r\n");
+		break;
 
-	// Initialize second sensor (changed address 0x30)
-	if(VL6180X_Init(VL6180X_SENSOR2_ADDR) != 0) {
-		printf("Sensor 2 initialization failed!\r\n");
-	}
-
-	// tURN ON THE SENSOR1
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(TOF_XSHUT_PORT, TOF_XSHUT_PIN, GPIO_PIN_SET);
-	HAL_Delay(50);
-
-
-	I2C_Scan();
-
-	// Initialize first sensor (default address 0x29)
-	if(VL6180X_Init(VL6180X_SENSOR1_ADDR) != 0) {
+	case 1:
 		printf("Sensor 1 initialization failed!\r\n");
+		break;
+
+	case 2:
+		printf("Sensor 2 initialization failed!\r\n");
+		break;
+
+	case 3:
+		printf("Sensor 2 not connected!\r\n");
+		break;
+
+	default:
+		printf("Unknown initialization error!\r\n");
+		break;
 	}
-
-
-
-	printf("VL6180X Ready!\r\n");
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
-			printf("Sensor 2 Distance: %d mm\r\n", distance2);
-		}
 		if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
 			printf("Sensor 1 Distance: %d mm\r\n", distance1);
+		}
+		if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
+			printf("Sensor 2 Distance: %d mm\r\n", distance2);
 		}
 		HAL_Delay(100);
 	}

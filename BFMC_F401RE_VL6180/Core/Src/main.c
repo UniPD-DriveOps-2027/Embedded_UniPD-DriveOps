@@ -41,6 +41,12 @@
 #define VL6180X_SENSOR2_ADDR 0x30
 #define VL6180X_ID 0xB4
 
+/* Parameter Linear Regression */
+#define LINEAR_CORRECTION_A_1 1.020000
+#define LINEAR_CORRECTION_B_1 0.300000
+#define LINEAR_CORRECTION_A_2 1.020000
+#define LINEAR_CORRECTION_B_2 0.300000
+
 // Register definitions (essential ones for address change)
 #define VL6180X_REG_I2C_SLAVE_DEV_ADDR 0x0212
 //#define VL6180X_REG_SYSTEM_FRESH_OUT_OF_RESET 0x0016
@@ -258,6 +264,31 @@ uint8_t i2c_Initialization(){
 	}
 	return 0;
 }
+
+void filePrintDistance(uint8_t distance) {
+    // Open file in append mode (creates if doesn't exist)
+
+	char* filepath = "/home/fede/Desktop/Embedded_Platform/TOF_LinearRegression/values.txt";
+
+    FILE* file = fopen(filepath, "a");
+    if (file == NULL) {
+    	perror("Error opening file");
+        return;
+    }
+
+    // Write the distance measurement
+    fprintf(file, "%d\n", distance);
+
+    // Close the file
+    fclose(file);
+}
+
+float correct_sensor1(uint8_t raw_value) {
+    return LINEAR_CORRECTION_A_1 * raw_value + LINEAR_CORRECTION_B_1;
+}
+float correct_sensor2(uint8_t raw_value) {
+    return LINEAR_CORRECTION_A_2 * raw_value + LINEAR_CORRECTION_B_2;
+}
 /* USER CODE END 0 */
 
 /**
@@ -268,9 +299,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	uint8_t tof_sensors = 0;	// flag to use TOF sensors
+	uint8_t tof_sensors = 1;	// flag to use TOF sensors
 	uint8_t line_sensors5 = 0;	// flag to use 5 line sensors
-	uint8_t line_sensor1 = 1;	// flag to use 1 line sensor
+	uint8_t line_sensor1 = 0;	// flag to use 1 line sensor
 
   /* USER CODE END 1 */
 
@@ -356,11 +387,15 @@ int main(void)
 
 		if (tof_sensors == 1) {
 			if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
-				printf("Sensor 1 Distance: %d mm\r\n", distance1);
+				printf("Sensor 1 measured distance: %d mm\r\n", distance1);
+				filePrintDistance(distance1);
+				//printf("Sensor 1 measured: %d mm, corrected: %.2f mm\r\n", distance1, correct_sensor1(distance1));
 			}
+			/*
 			if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
-				printf("Sensor 2 Distance: %d mm\r\n", distance2);
+				printf("Sensor 2 measured distance: %d mm\r\n", distance2);
 			}
+			*/
 		}
 
 		if (line_sensors5 == 1) {
@@ -382,7 +417,7 @@ int main(void)
 		}
 
 
-		HAL_Delay(100);
+		HAL_Delay(1000);
 	}
     /* USER CODE END WHILE */
 

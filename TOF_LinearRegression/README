@@ -1,0 +1,27 @@
+
+use the following function in CubeIde to write in the file values.txt
+
+void filePrintDistance(int distance) {
+    // Open file in append mode (creates if doesn't exist)
+	
+	char* filepath = "/home/fede/Desktop/Embedded_Platform/TOF_LinearRegression/values.txt";
+	
+    FILE* file = fopen(filepath, "a");
+    if (file == NULL) {
+        printf("Error opening file %s\r\n", filepath);
+        return;
+    }
+    
+    // Write the distance measurement
+    fprintf(file, "%d\n", distance);
+    
+    // Close the file
+    fclose(file);
+}
+
+USAGE:
+-modify filepath
+- use: filePrintDistance(distance1);
+
+then use linReg.py to read those values and compute lin reg coefficients
+

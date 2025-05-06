@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <errno.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,8 +43,8 @@
 #define VL6180X_ID 0xB4
 
 /* Parameter Linear Regression */
-#define LINEAR_CORRECTION_A_1 1.020000
-#define LINEAR_CORRECTION_B_1 0.300000
+#define LINEAR_CORRECTION_A_1 1.01787916
+#define LINEAR_CORRECTION_B_1 15.85141800
 #define LINEAR_CORRECTION_A_2 1.020000
 #define LINEAR_CORRECTION_B_2 0.300000
 
@@ -195,6 +196,7 @@ uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 	while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
 		if ((HAL_GetTick() - start_time) > timeout_ms) {
 			printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
+			*distance = -1;
 			return 1;
 		}
 	}
@@ -265,26 +267,10 @@ uint8_t i2c_Initialization(){
 	return 0;
 }
 
-void filePrintDistance(uint8_t distance) {
-    // Open file in append mode (creates if doesn't exist)
 
-	char* filepath = "/home/fede/Desktop/Embedded_Platform/TOF_LinearRegression/values.txt";
-
-    FILE* file = fopen(filepath, "a");
-    if (file == NULL) {
-    	perror("Error opening file");
-        return;
-    }
-
-    // Write the distance measurement
-    fprintf(file, "%d\n", distance);
-
-    // Close the file
-    fclose(file);
-}
-
-float correct_sensor1(uint8_t raw_value) {
-    return LINEAR_CORRECTION_A_1 * raw_value + LINEAR_CORRECTION_B_1;
+uint8_t correct_sensor1(uint8_t raw_value) {
+	uint8_t tmp = LINEAR_CORRECTION_A_1 * raw_value + LINEAR_CORRECTION_B_1;
+    return tmp;
 }
 float correct_sensor2(uint8_t raw_value) {
     return LINEAR_CORRECTION_A_2 * raw_value + LINEAR_CORRECTION_B_2;
@@ -383,13 +369,20 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	uint8_t i = 3;
+	HAL_Delay(5000);
 	while (1) {
 
 		if (tof_sensors == 1) {
 			if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
-				printf("Sensor 1 measured distance: %d mm\r\n", distance1);
-				filePrintDistance(distance1);
-				//printf("Sensor 1 measured: %d mm, corrected: %.2f mm\r\n", distance1, correct_sensor1(distance1));
+
+				//printf("Sensor 1 measured distance: %d mm for real distance: %d\r\n", distance1, i*10);
+				printf("Sensor 1 measured: %d mm, corrected: %d mm, real distance: %d mm\r\n", distance1, correct_sensor1(distance1), i*10);
+				i++;
+			}
+			if (i == 16) {
+				printf("Got to i = 15");
+				Error_Handler();
 			}
 			/*
 			if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
@@ -417,7 +410,7 @@ int main(void)
 		}
 
 
-		HAL_Delay(1000);
+		HAL_Delay(3000);
 	}
     /* USER CODE END WHILE */
 

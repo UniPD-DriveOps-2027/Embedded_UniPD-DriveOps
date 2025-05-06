@@ -43,8 +43,8 @@
 #define VL6180X_ID 0xB4
 
 /* Parameter Linear Regression */
-#define LINEAR_CORRECTION_A_1 1.01787916
-#define LINEAR_CORRECTION_B_1 15.85141800
+#define LINEAR_CORRECTION_A_1 1.00590103  //1.01787916
+#define LINEAR_CORRECTION_B_1 15.12839818 //15.85141800
 #define LINEAR_CORRECTION_A_2 1.020000
 #define LINEAR_CORRECTION_B_2 0.300000
 
@@ -369,7 +369,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	uint8_t i = 3;
+	float i = 3;
 	HAL_Delay(5000);
 	while (1) {
 
@@ -377,11 +377,11 @@ int main(void)
 			if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
 
 				//printf("Sensor 1 measured distance: %d mm for real distance: %d\r\n", distance1, i*10);
-				printf("Sensor 1 measured: %d mm, corrected: %d mm, real distance: %d mm\r\n", distance1, correct_sensor1(distance1), i*10);
-				i++;
+				printf("Sensor 1 measured: %d mm, corrected: %d mm, real distance: %.1f mm\r\n", distance1, correct_sensor1(distance1), i*10);
+				i = i + 0.5;
 			}
-			if (i == 16) {
-				printf("Got to i = 15");
+			if (i == 20.5) {
+				printf("Got to i = 20");
 				Error_Handler();
 			}
 			/*
@@ -410,7 +410,7 @@ int main(void)
 		}
 
 
-		HAL_Delay(3000);
+		HAL_Delay(200);
 	}
     /* USER CODE END WHILE */
 

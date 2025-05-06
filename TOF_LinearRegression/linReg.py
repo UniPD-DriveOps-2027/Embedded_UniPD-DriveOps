@@ -3,12 +3,17 @@ from sklearn.linear_model import LinearRegression
 
 
 # Sensor measurements
-measured = np.array([14, 25, 32, 41, 55, 61, 78, 81, 98, 98, 112, 122, 130])
+measured = np.array([
+    12, 22, 24, 34, 39, 38, 43, 46, 52, 60,
+    65, 66, 68, 77, 85, 87, 100, 106, 107, 107,
+    119, 120, 126, 130, 135, 142, 145, 151, 156, 159,
+    164, 169, 174, 176, 171
+])
 print(measured)
 # Real values (calibration points)
 init_cm = 3    # initial value in cm
-end_cm = 15    # end value in cm
-reference = np.arange(10 * init_cm, 10 * end_cm + 1, 10)
+end_cm = 20    # end value in cm
+reference = np.arange(10 * init_cm, 10 * end_cm + 1, 5)
 print(reference)
 
 # === Must be same size ===

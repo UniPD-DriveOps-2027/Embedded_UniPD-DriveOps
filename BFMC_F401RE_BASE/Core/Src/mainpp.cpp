@@ -11,7 +11,8 @@
 #include <std_msgs/Bool.h>
 #include "pid.h"
 #include "imu.h"
-//#include "pid_controller.h"
+
+#include "arm_math.h"
 
 #include "string.h"
 #include <stdio.h>
@@ -19,12 +20,12 @@
 #include <stdlib.h>
 
 // Constants
-#define TRANSMISSION_RATIO 		16				// both wheels placed on the ground are rotating at 1/16th of the motor's speed
+#define TRANSMISSION_RATIO 		14.7 			//16				// both wheels placed on the ground are rotating at 1/16th of the motor's speed
 #define STEER_DEG2PWM_RATIO 	0.0009505		// [deg] -> [pwm]
 #define STEER_DEG2PWM_OFFSET	0.07620			// [pwm]
 #define MOTOR_SPEED_OFFSET 		0.075568        // [pwm]: The zero default where motors are stop
 #define M_PPI					6.28318530718	//	2*pi
-#define WHEEL_RADIUS			0.0335// [m]
+#define WHEEL_RADIUS			0.03215// [m]
 #define MAX_FORWARD_SPEED		1.0				// [m/s]
 #define MAX_BACKWARD_SPEED		-0.5			// [m/s]
 #define MAX_FORWARD_PWM_SPEED   0.009
@@ -36,6 +37,8 @@
 //#define SPEED_FFW				0				//
 #define EPSILON					0.01			//
 //#define EPSILON_DIFF			0.001			//
+
+#define FIR_LENGHT 		 		13
 
 // timers defined in main.c so get them as extern
 extern TIM_HandleTypeDef htim2;
@@ -72,16 +75,29 @@ float adcValue = 0;
 uint8_t counter;
 float input,output,setpoint;
 float KP=0.020001, KI=0.025001, KD=0.0;
-uint16_t pFilterWindow = 3000;
-float filtered_p = 0;
-float raw_p = 0;
+uint32_t totalencoder= 0;
+uint32_t totalencoder2 =0;
+
+//Finite Impulse Response filter
+//float32_t fir_coefficients[FIR_LENGHT] = {-0.0329,0.0031,0.0364,0.0877,0.1442,0.1882,0.2048,0.1882,0.1442,0.0877,0.0364,0.0031,-0.0329};
+//float32_t fir_coefficients[FIR_LENGHT] = {0.0121,0.0215,0.0472,0.0823,0.1174,0.1432,0.1526,0.1432,0.1174,0.0823,0.0472,0.0215,0.0121};
+float32_t fir_coefficients[FIR_LENGHT] = {
+    0.0120f, 0.0213f, 0.0470f, 0.0822f,
+    0.1175f, 0.1435f, 0.1531f, 0.1435f,
+    0.1175f, 0.0822f, 0.0470f, 0.0213f,
+    0.0120f
+};
+arm_fir_instance_f32 fir_instance;
+float32_t fir_in_arm, fir_out_arm, fir_state[FIR_LENGHT];
+
+
 
 uint8_t samplingPID = (uint8_t)((ENC_COUNT_MAX + 1) / 1e3); // [ms]
 
-// CONTROLLERS PID 			 (Input,     Output,    Setpoint) 0.0075, 0.15, 0.00015
-PID SpeedController 	= PID(&carSpeed, &motorPWM, &speedRef, 0.02, 0.025, 0.0 ,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
-PID PositionController 	= PID(&localDistance, &speedTargetPos, &localDistanceRef, 6, 0.0, 3,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
-
+// CONTROLLERS PID 			 (Input,     Output,    Setpoint) 0.020001, 0.0250001, 0.000
+PID SpeedController 	= PID(&carSpeed, &motorPWM, &speedRef, 0.020001, 0.0250001, 0,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
+PID PositionController 	= PID(&localDistance, &speedTargetPos, &localDistanceRef, 6, 2, 0,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
+// 6 2 4 or 6 2 3 for pos
 
 
 // ROS STUFF
@@ -149,16 +165,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		double DT = ((ENC_COUNT_MAX + 1) / 1e6); //0.001s  [s]
 		// ---------- ENCODER SPEED ----------
 		encoderCount = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);	// (int16_t) cast to [-2^15 ; 2^15]
-		encoderTotal = encoderTotal + encoderCount;
-		motorSpeed = ((double)encoderCount / 2048.0) / DT; 		// [rps]: motor speed
-		wheelSpeed = motorSpeed / TRANSMISSION_RATIO;			// [rps]: wheel speed
+		motorSpeed = ((double)encoderCount / 1024.0) / DT; 		// [rps]: motor speed
+		fir_in_arm = (float32_t)motorSpeed;
+		arm_fir_f32(&fir_instance, &fir_in_arm, &fir_out_arm,1);
+
+		totalencoder2 += encoderCount;
+
+		wheelSpeed = (double)fir_out_arm / TRANSMISSION_RATIO;			// [rps]: wheel speed
 		carSpeed = wheelSpeed * M_PPI * WHEEL_RADIUS; 			// [m/s]: carSpeed, i.e. v = ω * R , where angular velocity ω = rps * 2π
 		globalDistance = globalDistance + carSpeed * DT;		// [m]: signed distance run by the car, i.e. curvilinear abscissa
 		localDistance = globalDistance - localDistanceOrigin;	// [m]: signed relative distance run by the car, i.e. curvilinear abscissa
 
+
 		// ---------- DOUBLE LOOP CONTROL ----------
 		// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
 		if(isPositionControl){
+			totalencoder += encoderCount;
+			if (totalencoder >= 10240*14.7) {
+				reachedPosition = true;
+				speedTarget = 0.0;
+				isPositionControl = false; //just added
+			}
+			else{
+				reachedPosition = false;
+				PositionController.Compute();
+				speedTarget = speedTargetPos;
+			}
+			/*
 			if(isClose(localDistance, localDistanceRef) and not posAckDone){
 				reachedPosition = true;
 				speedTarget = 0.0;
@@ -169,7 +202,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				reachedPosition = false;
 				PositionController.Compute();
 				speedTarget = speedTargetPos;
-			}
+			}*/
 		}
 
 		// ---------- INNER LOOP: SPEED CONTROL - PID ----------
@@ -181,21 +214,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 
 		// ---------- ACTUATION - SPEED ----------
-		//if(abs(motorPWM)<0.002) motorPWM = 0;
 
-		if(abs(speedRef) == 0.00)
+		if(abs(speedRef) == 0.00 or abs(motorPWM)<0.00001)
 			drive_pwm(0);
 		else
 			drive_pwm(motorPWM);
 
+		// Drive with pwm from topics
 		//drive_pwm(speedTarget);
 
 		//for plotting on SWM graph
-		//input=(float)carSpeed;
+		//input=(float32_t)carSpeed;
 		//output=(float)motorPWM * 100;
 		//setpoint=(float)speedRef;
-		//filtered_p = SpeedController.GetFilteredProportional();
-		//raw_p = SpeedController.GetKp() * (speedRef - carSpeed);
 
 		//input=(float)localDistance;
 		//output=(float)speedTargetPos;
@@ -224,9 +255,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == B1_Pin){
 
 		stop(0.0);
-
+		totalencoder2 = 0;
 		// Used for scalling the Graph in debugging, press twice the blue button so it gets scalled
-		/*
+/*
 		if (counter % 2 == 0){
 			input=-1;
 			output=-1;
@@ -238,11 +269,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 			setpoint=1;
 		}
 		counter++;
-		 */
+*/
+
 
 		//Update PID gains
 		//printf("KP = %f , KI = %f , KD = %f \r\n",KP,KI,KD);
-		//SpeedController.EnableProportionalFilter(true);
+		//SpeedController.EnableProportionalFilter(false);
 		//SpeedController.SetTunings((double)KP,(double)KI,(double)KD);
 		//SpeedController.SetProportionalFilterWindow(pFilterWindow);
 		//SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
@@ -277,13 +309,18 @@ void setup(void)
 	SpeedController.SetOutputLimits(-0.009, 0.0119);// PWM Output limits
 	SpeedController.SetSampleTime(samplingPID);// set sample time in [ms]
 	SpeedController.EnableProportionalFilter(true);
+	SpeedController.UseIFilter(true);
 	//SpeedController.SetProportionalFilterWindow(0);
 
 	// Set PID POSITION controller parameters
 	PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
-	PositionController.SetOutputLimits(-0.2, 0.2);// Speed Output limits [m/s]
+	PositionController.SetOutputLimits(-0.15, 0.15);// Speed Output limits [m/s]
 	PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
 	PositionController.EnableProportionalFilter(false);
+
+
+	//initialize the filter
+	arm_fir_init_f32(&fir_instance, FIR_LENGHT, fir_coefficients, fir_state, 1);
 
 	// Start TIMERS
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// DC MOTOR PWM
@@ -383,6 +420,7 @@ void position(float dist){
 	// ---------- POSITION references ----------
 	localDistanceOrigin = globalDistance;
 	localDistanceRef = dist;
+	totalencoder = 0;
 
 	// ---------- STATE ----------
 	isSpeedControl = true;

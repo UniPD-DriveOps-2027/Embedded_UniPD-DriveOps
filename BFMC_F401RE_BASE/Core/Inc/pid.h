@@ -220,13 +220,23 @@ class PID
 	double          _outMax;
 	
     static const uint16_t  _P_FILTER_WINDOW = 3000;  // Fixed window size
-    double          _pBuffer[3000];                  // Storage for P-term history
+    double          _pBuffer[_P_FILTER_WINDOW];      // Storage for P-term history
     uint16_t        _pBufferIndex;                   // Current position in buffer
     double          _pSum;                           // Running sum of buffer
     bool            _usePFilter;					 // Flag to enable/disable filtering
 
+    /* Integral Filter */
+    #define _I_FILTER_WINDOW 100
+
+    double _iBuffer[_I_FILTER_WINDOW];
+    uint8_t _iBufferIndex;
+    double _iSum;
+    bool _useIFilter;
+
+
 
 	public:
+    void UseIFilter(bool enable);
 	
 	/* :::::::::: Constructor :::::::::: */
 	PID();

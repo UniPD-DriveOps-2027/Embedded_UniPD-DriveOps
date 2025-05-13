@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <cmath>
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* ~~~~~~~~~~~~~~~~ Constructor ~~~~~~~~~~~~~~~~ */
@@ -32,13 +33,13 @@ _pBufferIndex(0),
 _pSum(0.0),
 _usePFilter(false)
 {
-memset(_pBuffer, 0, sizeof(_pBuffer));  // Initialize buffer to 0
+	memset(_pBuffer, 0, sizeof(_pBuffer));  // Initialize buffer to 0
 }
 
 PID::PID(double *Input, double *Output, double *Setpoint, double Kp, double Ki, double Kd, PIDPON_TypeDef POn, PIDCD_TypeDef ControllerDirection):
-    	_pBufferIndex(0),
-		_pSum(0.0),
-_usePFilter(false)
+    			_pBufferIndex(0),
+				_pSum(0.0),
+				_usePFilter(false)
 {
 
 	/* ~~~~~~~~~~ Set parameter ~~~~~~~~~~ */
@@ -57,6 +58,11 @@ _usePFilter(false)
 	_lastTime = GetTime() - _sampleTime;
 
 	memset(_pBuffer, 0, sizeof(_pBuffer));  // Initialize buffer
+	_iBufferIndex = 0;
+	_iSum = 0.0;
+	_useIFilter = false;
+	memset(_iBuffer, 0, sizeof(_iBuffer));
+
 
 }
 
@@ -84,6 +90,12 @@ void PID::Init(void)
 	_pSum = 0.0;
 	_pBufferIndex = 0;
 
+	_iBufferIndex = 0;
+	_iSum = 0.0;
+	_useIFilter = false;
+	memset(_iBuffer, 0, sizeof(_iBuffer));
+
+
 }
 
 void PID::Init(double *Input, double *Output, double *Setpoint, double Kp, double Ki, double Kd, PIDPON_TypeDef POn, PIDCD_TypeDef ControllerDirection)
@@ -107,6 +119,12 @@ void PID::Init(double *Input, double *Output, double *Setpoint, double Kp, doubl
 	memset(_pBuffer, 0, sizeof(_pBuffer));
 	_pSum = 0.0;
 	_pBufferIndex = 0;
+
+	_iBufferIndex = 0;
+	_iSum = 0.0;
+	_useIFilter = false;
+	memset(_iBuffer, 0, sizeof(_iBuffer));
+
 
 }
 
@@ -144,13 +162,28 @@ uint8_t PID::Compute(void)
 		error   = *_mySetpoint - input;
 		dInput  = (input - _lastInput);
 
-		_outputSum += (_ki * error);
+		if (_useIFilter)
+		{
+			// Moving average filter for the integral input
+			_iSum -= _iBuffer[_iBufferIndex];
+			_iBuffer[_iBufferIndex] = error;
+			_iSum += error;
+			_iBufferIndex = (_iBufferIndex + 1) % _I_FILTER_WINDOW;
 
-	    // Reset integral sum when stationary
+			double avgIError = _iSum / _I_FILTER_WINDOW;
+			_outputSum += (_ki * avgIError);
+		}
+		else
+		{
+			_outputSum += (_ki * error);
+		}
+
+
+		// Reset integral sum when stationary
 		if (abs(*_mySetpoint) < 0.01 && abs(*_myInput) < 0.01)
-	    {
-	        _outputSum = 0.0;  // Clear accumulated integral term
-	    }
+		{
+			_outputSum = 0.0;  // Clear accumulated integral term
+		}
 
 		/* ..... Add Proportional on Measurement, if P_ON_M is specified ..... */
 		if (!_pOnE)
@@ -177,21 +210,29 @@ uint8_t PID::Compute(void)
 		 */
 		if (_pOnE)  // Proportional-on-Error + Average windows
 		{
-			double rawP = _kp * error;
+			//double rawP = _kp * error;
 
-            if(_usePFilter)  // Only filter if enabled
-            {
-                // Update moving average buffer
-                _pSum -= _pBuffer[_pBufferIndex];
-                _pBuffer[_pBufferIndex] = rawP;
-                _pSum += rawP;
-                _pBufferIndex = (_pBufferIndex + 1) % 3000;
-                output = _pSum / 3000;
-                //printf("Filter Active | Index: %d | Sum: %.3f | Output: %.3f\n", _pBufferIndex, _pSum, output);
-            }
-            else{
-            	output = rawP;
-            }
+			if(_usePFilter)  // Only filter if enabled
+			{
+				// Update moving average buffer
+				_pSum -= _pBuffer[_pBufferIndex];
+				_pBuffer[_pBufferIndex] = error;  // Store raw error
+				_pSum += error;
+				_pBufferIndex = (_pBufferIndex + 1) % _P_FILTER_WINDOW;
+
+				double avgError = _pSum / _P_FILTER_WINDOW;
+				output = _kp * avgError;
+				/*
+				if(fabs(avgError) >= 0.2) {
+					output = _kp * avgError;
+					//printf("AvgError: %.3f", avgError);
+				}
+				else
+					output = 0;*/
+			}
+			else{
+				output = _kp * error;
+			}
 		}
 		else
 		{
@@ -320,11 +361,11 @@ void PID::SetTunings(double Kp, double Ki, double Kd, PIDPON_TypeDef POn)
 	_ki = Ki * SampleTimeInSec;
 	_kd = Kd / SampleTimeInSec;
 
-    // Reset integral sum when Ki is disabled
-    if (Ki == 0.0)
-    {
-        _outputSum = 0.0;  // Clear accumulated integral term
-    }
+	// Reset integral sum when Ki is disabled
+	if (Ki == 0.0)
+	{
+		_outputSum = 0.0;  // Clear accumulated integral term
+	}
 
 	/* ~~~~~~~~ Check direction ~~~~~~~~ */
 	if (_controllerDirection == _PID_CD_REVERSE)
@@ -393,4 +434,16 @@ double PID::GetKd(void)
 	return _dispKd;
 }
 
+void PID::UseIFilter(bool enable)
+{
+	_useIFilter = enable;
+
+	// Optional: clear buffer when enabling
+	if (enable)
+	{
+		memset(_iBuffer, 0, sizeof(_iBuffer));
+		_iSum = 0.0;
+		_iBufferIndex = 0;
+	}
+}
 

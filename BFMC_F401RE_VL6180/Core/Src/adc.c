@@ -90,9 +90,15 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**ADC1 GPIO Configuration
     PC0     ------> ADC1_IN10
+    PC1     ------> ADC1_IN11
+    PC2     ------> ADC1_IN12
+    PC3     ------> ADC1_IN13
     PA1     ------> ADC1_IN1
+    PC4     ------> ADC1_IN14
+    PC5     ------> ADC1_IN15
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Pin = LINE_1_Pin|LINE_5_1_Pin|LINE_5_2_Pin|LINE_5_3_Pin
+                          |LINE_5_4_Pin|LINE_5_5_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -121,9 +127,15 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
     /**ADC1 GPIO Configuration
     PC0     ------> ADC1_IN10
+    PC1     ------> ADC1_IN11
+    PC2     ------> ADC1_IN12
+    PC3     ------> ADC1_IN13
     PA1     ------> ADC1_IN1
+    PC4     ------> ADC1_IN14
+    PC5     ------> ADC1_IN15
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0);
+    HAL_GPIO_DeInit(GPIOC, LINE_1_Pin|LINE_5_1_Pin|LINE_5_2_Pin|LINE_5_3_Pin
+                          |LINE_5_4_Pin|LINE_5_5_Pin);
 
     HAL_GPIO_DeInit(LINE_SENSOR_RIGHT_GPIO_Port, LINE_SENSOR_RIGHT_Pin);
 

@@ -186,15 +186,14 @@ uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
  */
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 	uint32_t start_time = HAL_GetTick();  // Get start time in milliseconds
-	uint32_t timeout_ms = 70;             // Timeout after x milliseconds
+	uint32_t timeout_ms = 60;             // Timeout after x milliseconds
 
 	VL6180X_WriteReg(sensor_addr, VL6180X_SYSRANGE_START, 0x01);
 
 	// Wait for measurement to complete or timeout
 	while ((VL6180X_ReadReg(sensor_addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
 		if ((HAL_GetTick() - start_time) > timeout_ms) {
-			printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
-			*distance = -1;
+			//printf("[ReadDistance] Timeout occurred, sensor didn't respond\r\n");
 			return 1;
 		}
 	}
@@ -206,7 +205,10 @@ uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 
 
 uint8_t i2c_Initialization(){
-	/* Sensor 1 has the shutdown signal and is off */
+	// Turn off sensor 1
+	HAL_Delay(50);
+	HAL_GPIO_WritePin(TOF_XSHUT_PORT, TOF_XSHUT_PIN, GPIO_PIN_RESET);
+	HAL_Delay(50);
 
 	/* Initialization sensor 2 */
 	uint8_t found = 0;
@@ -229,6 +231,7 @@ uint8_t i2c_Initialization(){
 			if (addr == VL6180X_SENSOR1_ADDR) {
 				// Initialize sensor 2 using default address 0x29
 				if(VL6180X_Init(VL6180X_SENSOR1_ADDR) != 0) {
+					printf("Sensor 2 initialization failed! \r\n");
 					return 2;
 				}
 
@@ -243,11 +246,13 @@ uint8_t i2c_Initialization(){
 				/* Here sensor 2 is already initialized
 				 * just brake the for and keep going
 				 */
+				printf("TOF sensor 2 already initialized \r\n");
 				break;
 			}
 		}
 	}
 	if (found == 0) {
+		printf("Sensor 2 not connected! \r\n");
 		return 3;
 	}
 
@@ -260,8 +265,10 @@ uint8_t i2c_Initialization(){
 
 	// Initialize sensor 1 using default address 0x29
 	if(VL6180X_Init(VL6180X_SENSOR1_ADDR) != 0) {
+		printf("Sensor 1 initialization failed! \r\n");
 		return 1;
 	}
+	printf("TOF sensors ready! \r\n");
 	return 0;
 }
 
@@ -275,7 +282,6 @@ int linear_correction_2(uint8_t raw_value) {
 	int tmp = LINEAR_CORRECTION_A_2 * raw_value + LINEAR_CORRECTION_B_2;
 	return tmp;
 }
-
 
 /* LINE SENSOR */
 uint32_t readADC(uint32_t channel)
@@ -296,12 +302,9 @@ uint32_t readADC(uint32_t channel)
 	}
 
 	// Wait for conversion
-	if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-	{
+	if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK) {
 		adc_value = HAL_ADC_GetValue(&hadc1);
-	}
-	else
-	{
+	} else {
 		adc_value = -1;  // Conversion timeout
 	}
 
@@ -314,8 +317,12 @@ void readAllSensors(uint32_t channels[], uint32_t results[], uint8_t count)
 {
 	for(uint8_t i = 0; i < count; i++) {
 		results[i] = readADC(channels[i]);
+		if(results[i] == (uint32_t)-1) {
+			printf("Error reading sensor %d\r\n", i+1);
+		}
 	}
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -364,49 +371,29 @@ int main(void)
 	uint8_t distance1 = 0, distance2 = 0;
 	if (tof_sensors == 1) {
 		printf("Start initialization TOF sensors \r\n");
-
-		switch(i2c_Initialization()) {
-		case 0:
-			printf("TOF sensors ready!\r\n");
-			break;
-
-		case 1:
-			printf("Sensor 1 initialization failed!\r\n");
-			break;
-
-		case 2:
-			printf("Sensor 2 initialization failed!\r\n");
-			break;
-
-		case 3:
-			printf("Sensor 2 not connected!\r\n");
-			break;
-
-		default:
-			printf("Unknown initialization error!\r\n");
-			break;
-		}
+		i2c_Initialization();
 	}
 
 	/* 5 line sensors code */
 	// Define which ADC channels correspond to each sensor
 	uint32_t sensorChannels[5] = {
-			ADC_CHANNEL_0,  // OUT1 on PA0
-			ADC_CHANNEL_1,  // OUT2 on PA1
-			ADC_CHANNEL_4,  // OUT3 on PA4
-			ADC_CHANNEL_5,  // OUT4 on PA5
-			ADC_CHANNEL_6   // OUT5 on PA6
+			ADC_CHANNEL_11,  // OUT1 on PC1 (LINE_5_1)
+			ADC_CHANNEL_12,  // OUT2 on PC2 (LINE_5_2)
+			ADC_CHANNEL_13,  // OUT3 on PC3 (LINE_5_3)
+			ADC_CHANNEL_14,  // OUT4 on PC4 (LINE_5_4)
+			ADC_CHANNEL_15   // OUT5 on PC5 (LINE_5_5)
 	};
 	uint32_t sensorValues[5];
 	if (line_sensors5 == 1) {
-		printf("Testing 5 sensors IR array module...\r\n");
+		printf("Testing 5 sensors IR array module... \r\n");
 
 	}
 
 	/* 1 line sensor code */
-	GPIO_PinState sensor1;
+	uint32_t sensor1Channel = ADC_CHANNEL_10; // OUT on PC0 (LINE_1)
+	uint32_t sensor1Value;
 	if (line_sensor1 == 1) {
-		printf("Testing 1 sensor IR...\r\n");
+		printf("Testing 1 sensor IR... \r\n");
 	}
 
 
@@ -414,21 +401,50 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
+	uint8_t TOFcounterInitialize = 0;
+	uint8_t TOFflag = 0;
 
 	//HAL_Delay(5000);
 	while (1) {
 
 		if (tof_sensors == 1) {
 
-			if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
-				//printf("Sensor 1 measured distance: %d mm for real distance: %d\r\n", distance1, i*10);
-				printf("Sensor 1 measured: %d mm, corrected: %d mm \r\n", distance1, linear_correction_1(distance1));
+			/* If one of the 2 sensors is not working TOFflag goes to 1
+			 * and after 20 cycles (TOFcounterInitialize == 20)
+			 * attempt to reconnect
+			 * If one sensor stop working automatically also the other
+			 * sensor stop working
+			 */
+
+			if (TOFflag == 0){
+
+				if (VL6180X_ReadDistance(VL6180X_SENSOR1_ADDR, &distance1) == 0) {
+					//printf("Sensor 1 measured distance: %d mm for real distance: %d\r\n", distance1, i*10);
+					printf("Sensor 1 measured: %d mm, corrected: %d mm \r\n", distance1, linear_correction_1(distance1));
+				} else {
+					TOFflag = 1;
+				}
+				if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
+					//printf("Sensor 2 measured distance: %d mm\r\n", distance2);
+					/* SENSOR 2 HAS THE SCRATCH */
+					printf("Sensor 2 measured: %d mm, corrected: %d mm \r\n", distance2, linear_correction_2(distance2));
+				} else {
+					TOFflag = 1;
+				}
+
+			} else {
+				TOFcounterInitialize++;
+				printf("TOFcounterInitialize = %d \r\n", TOFcounterInitialize);
 			}
-			if (VL6180X_ReadDistance(VL6180X_SENSOR2_ADDR, &distance2) == 0) {
-				//printf("Sensor 2 measured distance: %d mm\r\n", distance2);
-				/* SENSOR 2 HAS THE SCRATCH */
-				printf("Sensor 2 measured: %d mm, corrected: %d mm \r\n", distance2, linear_correction_2(distance2));
+
+			if (TOFcounterInitialize == 20) {
+				printf("Attempt TOF sensors initialization...");
+				if (i2c_Initialization() == 0) {
+					TOFflag = 0;
+				}
+				TOFcounterInitialize = 0;
 			}
+
 		}
 
 		if (line_sensors5 == 1) {
@@ -444,24 +460,27 @@ int main(void)
 					sensorValues[0], sensorValues[1], sensorValues[2],
 					sensorValues[3], sensorValues[4]);
 
-			// Visual representation (helpful for line following)
+			// Visual representation
 			printf("[");
 			for(int i = 0; i < 5; i++) {
-				printf(sensorValues[i] > 2500 ? "#" : " "); // '#' for detected
-				if(i < 4) printf(" ");
+				printf(sensorValues[i] > 2000 ? "#" : " "); // '#' for detected
+				if(i < 4) printf("       ");
 			}
 			printf("]\r\n\r\n");
 		}
 
 		if (line_sensor1 == 1) {
-			sensor1 = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
+			sensor1Value = readADC(sensor1Channel);
 
 			// print low when detect
-			printf("Sensor: %d \r\n", sensor1);
+			printf("Sensor: %d \r\n", sensor1Value);
+			printf("[");
+			printf(sensor1Value > 2000 ? " # " : "   "); // '#' for detected
+			printf("]\r\n\r\n");
 		}
 
 
-		HAL_Delay(10);
+		HAL_Delay(100);
 	}
 	/* USER CODE END WHILE */
 

@@ -20,12 +20,12 @@
 #include <stdlib.h>
 
 // Constants
-#define TRANSMISSION_RATIO 		14.7 			//16				// both wheels placed on the ground are rotating at 1/16th of the motor's speed
+#define TRANSMISSION_RATIO 		14.6 			//16				// both wheels placed on the ground are rotating at 1/16th of the motor's speed
 #define STEER_DEG2PWM_RATIO 	0.0009505		// [deg] -> [pwm]
 #define STEER_DEG2PWM_OFFSET	0.07620			// [pwm]
 #define MOTOR_SPEED_OFFSET 		0.075568        // [pwm]: The zero default where motors are stop
 #define M_PPI					6.28318530718	//	2*pi
-#define WHEEL_RADIUS			0.03215// [m]
+#define WHEEL_RADIUS			0.03224			// [m]
 #define MAX_FORWARD_SPEED		1.0				// [m/s]
 #define MAX_BACKWARD_SPEED		-0.5			// [m/s]
 #define MAX_FORWARD_PWM_SPEED   0.009
@@ -181,7 +181,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
 		if(isPositionControl){
 			totalencoder += encoderCount;
-			if (totalencoder >= 10240*14.7) {
+			if (totalencoder >= 10240*TRANSMISSION_RATIO) {
 				reachedPosition = true;
 				speedTarget = 0.0;
 				isPositionControl = false; //just added
@@ -256,6 +256,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 		stop(0.0);
 		totalencoder2 = 0;
+		totalencoder = 0;
 		// Used for scalling the Graph in debugging, press twice the blue button so it gets scalled
 /*
 		if (counter % 2 == 0){

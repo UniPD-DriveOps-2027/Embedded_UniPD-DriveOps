@@ -37,15 +37,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_macro  00019a4f  00000000  00000000  000247f0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   000160d2  00000000  00000000  0003e23f  2**0
+ 17 .debug_line   0001612f  00000000  00000000  0003e23f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0009e35b  00000000  00000000  00054311  2**0
+ 18 .debug_str    0009e35c  00000000  00000000  0005436e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  000f266c  2**0
+ 19 .comment      00000043  00000000  00000000  000f26ca  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00005c3c  00000000  00000000  000f26b0  2**2
+ 20 .debug_frame  00005c3c  00000000  00000000  000f2710  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000066  00000000  00000000  000f82ec  2**0
+ 21 .debug_line_str 00000067  00000000  00000000  000f834c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2425,7 +2425,7 @@ uint8_t i2c_Initialization(){
 				/* Here sensor 2 is already initialized
 				 * just brake the for and keep going
 				 */
-				printf("TOF sensors already initialized \r\n");
+				printf("TOF sensor 2 already initialized \r\n");
  800167e:	481b      	ldr	r0, [pc, #108]	@ (80016ec <i2c_Initialization+0xf4>)
  8001680:	f006 fc68 	bl	8007f54 <puts>
 				break;
@@ -2863,6 +2863,10 @@ int main(void)
  8001936:	f897 3037 	ldrb.w	r3, [r7, #55]	@ 0x37
  800193a:	2b01      	cmp	r3, #1
  800193c:	d157      	bne.n	80019ee <main+0x15e>
+			 * attempt to reconnect
+			 * If one sensor stop working automatically also the other
+			 * sensor stop working
+			 */
 
 			if (TOFflag == 0){
  800193e:	f897 303e 	ldrb.w	r3, [r7, #62]	@ 0x3e

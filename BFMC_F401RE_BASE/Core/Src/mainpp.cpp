@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 // Constants
-#define TRANSMISSION_RATIO 		14.6 			//16				// both wheels placed on the ground are rotating at 1/16th of the motor's speed
+#define TRANSMISSION_RATIO 		14.6 			//16	// both wheels placed on the ground are rotating at 1/16th of the motor's speed
 #define STEER_DEG2PWM_RATIO 	0.0009505		// [deg] -> [pwm]
 #define STEER_DEG2PWM_OFFSET	0.07620			// [pwm]
 #define MOTOR_SPEED_OFFSET 		0.075568        // [pwm]: The zero default where motors are stop
@@ -55,7 +55,8 @@ ros::NodeHandle nh;
 double speedTarget=0.0, speedTargetPos=0.0, speedRef=0.0; // [m/s], [m/s]: speed references
 double steerRef=0.0;// [deg]: steer references
 // MEASUREMENT variables
-double wheelSpeed=0.0, motorSpeed=0.0, carSpeed=0.0;// [rps], [rps], [m/s]: speed measurements
+double wheelSpeed=0.0, carSpeed=0.0, motorSpeed=0.0;// [rps], [m/s], [rps]: speed measurements
+double wheelSpeedfiltered=0.0, carSpeedfiltered=0.0;// [rps], [m/s]
 double globalDistance=0.0, localDistance=0.0, localDistanceOrigin=0.0, localDistanceRef=0.0;// [m]: position measurements
 long encoderCount=0;// [tick]: encoder count
 long encoderTotal=0;
@@ -66,21 +67,13 @@ bool isSpeedControl 	= true;
 bool isPositionControl 	= false;
 bool posAckDone=false, reachedPosition=false, pub_flag=false;
 
-// ADC
-//uint16_t adcValue = 0;
-float adcValue = 0;
-
 
 // DEBUGGING
 uint8_t counter;
 float input,output,setpoint;
 float KP=0.020001, KI=0.025001, KD=0.0;
-uint32_t totalencoder= 0;
-uint32_t totalencoder2 =0;
 
 //Finite Impulse Response filter
-//float32_t fir_coefficients[FIR_LENGHT] = {-0.0329,0.0031,0.0364,0.0877,0.1442,0.1882,0.2048,0.1882,0.1442,0.0877,0.0364,0.0031,-0.0329};
-//float32_t fir_coefficients[FIR_LENGHT] = {0.0121,0.0215,0.0472,0.0823,0.1174,0.1432,0.1526,0.1432,0.1174,0.0823,0.0472,0.0215,0.0121};
 float32_t fir_coefficients[FIR_LENGHT] = {
     0.0120f, 0.0213f, 0.0470f, 0.0822f,
     0.1175f, 0.1435f, 0.1531f, 0.1435f,
@@ -95,7 +88,7 @@ float32_t fir_in_arm, fir_out_arm, fir_state[FIR_LENGHT];
 uint8_t samplingPID = (uint8_t)((ENC_COUNT_MAX + 1) / 1e3); // [ms]
 
 // CONTROLLERS PID 			 (Input,     Output,    Setpoint) 0.020001, 0.0250001, 0.000
-PID SpeedController 	= PID(&carSpeed, &motorPWM, &speedRef, 0.020001, 0.0250001, 0,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
+PID SpeedController 	= PID(&carSpeedfiltered, &motorPWM, &speedRef, 0.020001, 0.0250001, 0,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
 PID PositionController 	= PID(&localDistance, &speedTargetPos, &localDistanceRef, 6, 2, 0,_PID_P_ON_E, _PID_CD_DIRECT);// PID_Proportional_On_Error
 // 6 2 4 or 6 2 3 for pos
 
@@ -168,11 +161,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		motorSpeed = ((double)encoderCount / 1024.0) / DT; 		// [rps]: motor speed
 		fir_in_arm = (float32_t)motorSpeed;
 		arm_fir_f32(&fir_instance, &fir_in_arm, &fir_out_arm,1);
-
-		totalencoder2 += encoderCount;
-
-		wheelSpeed = (double)fir_out_arm / TRANSMISSION_RATIO;			// [rps]: wheel speed
-		carSpeed = wheelSpeed * M_PPI * WHEEL_RADIUS; 			// [m/s]: carSpeed, i.e. v = ω * R , where angular velocity ω = rps * 2π
+		wheelSpeedfiltered = (double)fir_out_arm / TRANSMISSION_RATIO;	// [rps]: wheel speed
+		wheelSpeed = motorSpeed / TRANSMISSION_RATIO;
+		carSpeedfiltered = wheelSpeedfiltered * M_PPI * WHEEL_RADIUS; 			// [m/s]: carSpeed, i.e. v = ω * R , where angular velocity ω = rps * 2π
+		carSpeed = wheelSpeed * M_PPI * WHEEL_RADIUS;
 		globalDistance = globalDistance + carSpeed * DT;		// [m]: signed distance run by the car, i.e. curvilinear abscissa
 		localDistance = globalDistance - localDistanceOrigin;	// [m]: signed relative distance run by the car, i.e. curvilinear abscissa
 
@@ -180,29 +172,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// ---------- DOUBLE LOOP CONTROL ----------
 		// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
 		if(isPositionControl){
-			totalencoder += encoderCount;
-			if (totalencoder >= 10240*TRANSMISSION_RATIO) {
-				reachedPosition = true;
-				speedTarget = 0.0;
-				isPositionControl = false; //just added
-			}
-			else{
-				reachedPosition = false;
-				PositionController.Compute();
-				speedTarget = speedTargetPos;
-			}
-			/*
+
 			if(isClose(localDistance, localDistanceRef) and not posAckDone){
 				reachedPosition = true;
 				speedTarget = 0.0;
 				isPositionControl = false; //just added
-
 			}
 			else{
 				reachedPosition = false;
 				PositionController.Compute();
 				speedTarget = speedTargetPos;
-			}*/
+			}
 		}
 
 		// ---------- INNER LOOP: SPEED CONTROL - PID ----------
@@ -255,8 +235,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin == B1_Pin){
 
 		stop(0.0);
-		totalencoder2 = 0;
-		totalencoder = 0;
 		// Used for scalling the Graph in debugging, press twice the blue button so it gets scalled
 /*
 		if (counter % 2 == 0){
@@ -315,7 +293,7 @@ void setup(void)
 
 	// Set PID POSITION controller parameters
 	PositionController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
-	PositionController.SetOutputLimits(-0.15, 0.15);// Speed Output limits [m/s]
+	PositionController.SetOutputLimits(-0.2, 0.2);// Speed Output limits [m/s]
 	PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
 	PositionController.EnableProportionalFilter(false);
 
@@ -421,7 +399,6 @@ void position(float dist){
 	// ---------- POSITION references ----------
 	localDistanceOrigin = globalDistance;
 	localDistanceRef = dist;
-	totalencoder = 0;
 
 	// ---------- STATE ----------
 	isSpeedControl = true;

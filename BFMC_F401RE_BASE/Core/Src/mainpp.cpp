@@ -9,6 +9,7 @@
 #include <ros.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/UInt8.h>
 #include "pid.h"
 #include "imu.h"
 
@@ -18,6 +19,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "vl6180.h"
+
 
 // Constants
 #define TRANSMISSION_RATIO 		14.6 			//16	// both wheels placed on the ground are rotating at 1/16th of the motor's speed
@@ -41,6 +45,7 @@
 #define FIR_LENGHT 		 		13
 
 // timers defined in main.c so get them as extern
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
@@ -75,14 +80,18 @@ float KP=0.020001, KI=0.025001, KD=0.0;
 
 //Finite Impulse Response filter
 float32_t fir_coefficients[FIR_LENGHT] = {
-    0.0120f, 0.0213f, 0.0470f, 0.0822f,
-    0.1175f, 0.1435f, 0.1531f, 0.1435f,
-    0.1175f, 0.0822f, 0.0470f, 0.0213f,
-    0.0120f
+		0.0120f, 0.0213f, 0.0470f, 0.0822f,
+		0.1175f, 0.1435f, 0.1531f, 0.1435f,
+		0.1175f, 0.0822f, 0.0470f, 0.0213f,
+		0.0120f
 };
 arm_fir_instance_f32 fir_instance;
 float32_t fir_in_arm, fir_out_arm, fir_state[FIR_LENGHT];
 
+// VL6180X TOF sensor definition
+VL6180X_Sensor sensorsTOF[NUMBER_OF_VL6180X_ID];
+uint8_t TOFcounterToInitialize = 0;
+uint8_t tmp = 0;
 
 
 uint8_t samplingPID = (uint8_t)((ENC_COUNT_MAX + 1) / 1e3); // [ms]
@@ -97,6 +106,8 @@ PID PositionController 	= PID(&localDistance, &speedTargetPos, &localDistanceRef
 std_msgs::Float32 carSpeed_msg;
 std_msgs::Float32 globalDistance_msg;
 std_msgs::Bool posFeedback_msg;
+std_msgs::UInt8 VL6180X_front_msg;
+std_msgs::UInt8 VL6180X_left_msg;
 
 
 // command callbacks
@@ -121,10 +132,15 @@ float readADC(void);
 ros::Publisher carSpeed_pub("automobile/encoder/speed", &carSpeed_msg);
 ros::Publisher globalDistance_pub("automobile/encoder/distance", &globalDistance_msg);
 ros::Publisher posFeedback_pub("automobile/feedback/position", &posFeedback_msg);
+ros::Publisher VL6180X_front_pub("automobile/TOF/front", &VL6180X_front_msg);
+ros::Publisher VL6180X_left_pub("automobile/TOF/left", &VL6180X_left_msg);
 ros::Subscriber<std_msgs::Float32> speed_sub("automobile/command/speed", &command_speed_callback);
 ros::Subscriber<std_msgs::Float32> steer_sub("automobile/command/steer", &command_steer_callback);
 ros::Subscriber<std_msgs::Float32> stop_sub("automobile/command/stop", &command_stop_callback);
 ros::Subscriber<std_msgs::Float32> pos_sub("automobile/command/position", &command_pos_callback);
+
+
+
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	nh.getHardware()->flush();
@@ -153,7 +169,7 @@ void command_pos_callback(const std_msgs::Float32& msg){
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim == &htim11){//every 1ms, PSC = 83, ARR = 999, f_tim = 84MHz -> (ARR+1*PSC)/f_TIM = 0.001s = 1ms
+	if(htim == &htim11){  //every 1ms, PSC = 83, ARR = 999, f_tim = 84MHz -> (ARR+1*PSC)/f_TIM = 0.001s = 1ms
 
 		double DT = ((ENC_COUNT_MAX + 1) / 1e6); //0.001s  [s]
 		// ---------- ENCODER SPEED ----------
@@ -217,15 +233,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	}
 
-	if(htim == &htim10){	//every 10ms
+	if(htim == &htim10){  //every 10ms
 		pub_flag = true;
+
+		tmp++;
 	}
 
-	/*
-	if (htim->Instance == TIM1) { // PRESCALER * COUNTER / CLOCK_FREQ = 0.01 s = 10 ms
-		imuTimerCallback();
+	if (tmp >= 7){
+
+		/* every 7 timer 10 (that is 10 ms)
+		 * hence, every 70 ms read values */
+
+		VL6180X_ReadAllDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+
+		VL6180X_PrintAllDistances(&sensorsTOF[0]);
+
+		if (TOFcounterToInitialize >= VL6180X_REINITIALIZE_COUNTER){
+			TOFcounterToInitialize = 0;
+			VL6180X_i2c_Init(&sensorsTOF[0]);
+		}
+
+		tmp = 0; // Reset counter
 	}
-	*/
 
 }
 
@@ -236,7 +265,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 		stop(0.0);
 		// Used for scalling the Graph in debugging, press twice the blue button so it gets scalled
-/*
+		/*
 		if (counter % 2 == 0){
 			input=-1;
 			output=-1;
@@ -248,7 +277,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 			setpoint=1;
 		}
 		counter++;
-*/
+		 */
 
 
 		//Update PID gains
@@ -276,6 +305,8 @@ void setup(void)
 	nh.advertise(carSpeed_pub);
 	nh.advertise(globalDistance_pub);
 	nh.advertise(posFeedback_pub);
+	nh.advertise(VL6180X_front_pub);
+	nh.advertise(VL6180X_left_pub);
 
 	// ... and declare subscribers
 	nh.subscribe(speed_sub);
@@ -301,12 +332,21 @@ void setup(void)
 	//initialize the filter
 	arm_fir_init_f32(&fir_instance, FIR_LENGHT, fir_coefficients, fir_state, 1);
 
+	// VL6180X TOF sensors initialization
+	VL6180X_Setup(&sensorsTOF[0]);
+	VL6180X_i2c_Init(&sensorsTOF[0]);
+	VL6180X_ReadAllDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+	if (TOFcounterToInitialize != 0){
+		printf("Error initializig TOF sensors! \r\n");
+	}
+
 	// Start TIMERS
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// DC MOTOR PWM
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);// SERVO PWM
 	HAL_TIM_Base_Start(&htim4);// ENCODER COUNTER
 	HAL_TIM_Base_Start_IT(&htim11);// ENCODER SPEED AND SPEED CONTROL
 	HAL_TIM_Base_Start_IT(&htim10);// PUBLISH TIMER
+	HAL_TIM_Base_Start(&htim1);// TOF SENSORS TIMER
 
 	// stop the car
 	speedTarget = 0.0;
@@ -315,7 +355,6 @@ void setup(void)
 	//added
 	steer(0);
 	drive_pwm(0);
-
 }
 
 void loop(void)
@@ -341,6 +380,12 @@ void loop(void)
 				posAckDone = true;
 
 			}
+
+			VL6180X_front_msg.data = sensorsTOF[0].distance;
+			VL6180X_front_pub.publish(&VL6180X_front_msg);
+			VL6180X_left_msg.data = sensorsTOF[1].distance;
+			VL6180X_left_pub.publish(&VL6180X_left_msg);
+
 
 			pub_flag = false;
 		}

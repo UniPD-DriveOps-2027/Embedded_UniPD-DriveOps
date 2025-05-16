@@ -9,9 +9,12 @@
 #define INC_VL6180_H_
 
 #include "stm32f4xx_hal.h"
-#include "i2c.h"
+
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define NUMBER_OF_VL6180X_ID          		2
 typedef struct {
@@ -54,7 +57,7 @@ typedef struct {
 #define VL6180X_2_Q  						0.36225924
 
 /* Counter for reinitialize VL6180X sensor(s) */
-#define VL6180X_REINITIALIZE_COUNTER  		30
+#define VL6180X_REINITIALIZE_COUNTER  		100*(NUMBER_OF_VL6180X_ID)
 
 /* Public function prototypes */
 uint8_t VL6180X_WriteReg(uint8_t sensor_addr, uint16_t reg, uint8_t value);
@@ -65,5 +68,9 @@ void VL6180X_i2c_Init(VL6180X_Sensor *sensors);
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance);
 void VL6180X_ReadAllDistances(VL6180X_Sensor *sensors, uint8_t *counter);
 void VL6180X_PrintAllDistances(VL6180X_Sensor *sensors);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_VL6180_H_ */

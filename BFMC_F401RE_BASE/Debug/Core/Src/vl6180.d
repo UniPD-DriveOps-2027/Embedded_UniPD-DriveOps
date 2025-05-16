@@ -32,7 +32,7 @@ Core/Src/vl6180.o: ../Core/Src/vl6180.c ../Core/Inc/vl6180.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/i2c.h ../Core/Inc/main.h ../Core/Inc/main.h
+ ../Core/Inc/main.h ../Core/Inc/i2c.h ../Core/Inc/main.h
 ../Core/Inc/vl6180.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -67,6 +67,6 @@ Core/Src/vl6180.o: ../Core/Src/vl6180.c ../Core/Inc/vl6180.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../Core/Inc/i2c.h:
 ../Core/Inc/main.h:
+../Core/Inc/i2c.h:
 ../Core/Inc/main.h:

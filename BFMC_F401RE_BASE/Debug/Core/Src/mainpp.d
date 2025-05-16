@@ -41,9 +41,9 @@ Core/Src/mainpp.o: ../Core/Src/mainpp.cpp ../Core/Inc/mainpp.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/std_msgs/Float32.h ../Core/Inc/std_msgs/Bool.h \
- ../Core/Inc/pid.h ../Core/Inc/main.h ../Core/Inc/imu.h \
- ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
- ../Drivers/CMSIS/Include/cmsis_compiler.h
+ ../Core/Inc/std_msgs/UInt8.h ../Core/Inc/pid.h ../Core/Inc/main.h \
+ ../Core/Inc/imu.h ../Middlewares/ST/ARM/DSP/Inc/arm_math.h \
+ ../Drivers/CMSIS/Include/cmsis_compiler.h ../Core/Inc/vl6180.h
 ../Core/Inc/mainpp.h:
 ../Core/Inc/ros.h:
 ../Core/Inc/ros/node_handle.h:
@@ -95,8 +95,10 @@ Core/Src/mainpp.o: ../Core/Src/mainpp.cpp ../Core/Inc/mainpp.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/std_msgs/Float32.h:
 ../Core/Inc/std_msgs/Bool.h:
+../Core/Inc/std_msgs/UInt8.h:
 ../Core/Inc/pid.h:
 ../Core/Inc/main.h:
 ../Core/Inc/imu.h:
 ../Middlewares/ST/ARM/DSP/Inc/arm_math.h:
 ../Drivers/CMSIS/Include/cmsis_compiler.h:
+../Core/Inc/vl6180.h:

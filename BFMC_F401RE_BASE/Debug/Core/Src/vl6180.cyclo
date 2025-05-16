@@ -1,8 +1,8 @@
-../Core/Src/vl6180.c:15:9:VL6180X_WriteReg	1
-../Core/Src/vl6180.c:20:9:VL6180X_ReadReg	1
-../Core/Src/vl6180.c:28:6:VL6180X_Setup	1
-../Core/Src/vl6180.c:47:9:VL6180X_Init	2
-../Core/Src/vl6180.c:91:6:VL6180X_i2c_Init	4
+../Core/Src/vl6180.c:16:9:VL6180X_WriteReg	1
+../Core/Src/vl6180.c:21:9:VL6180X_ReadReg	1
+../Core/Src/vl6180.c:29:6:VL6180X_Setup	1
+../Core/Src/vl6180.c:48:9:VL6180X_Init	2
+../Core/Src/vl6180.c:92:6:VL6180X_i2c_Init	4
 ../Core/Src/vl6180.c:116:9:VL6180X_ReadDistance	3
-../Core/Src/vl6180.c:133:6:VL6180X_ReadAllDistances	4
-../Core/Src/vl6180.c:151:6:VL6180X_PrintAllDistances	4
+../Core/Src/vl6180.c:133:6:VL6180X_ReadAllDistances	5
+../Core/Src/vl6180.c:156:6:VL6180X_PrintAllDistances	4

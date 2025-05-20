@@ -25,6 +25,7 @@ typedef struct {
 	uint8_t distance;
 	float m;
 	float q;
+	//uint8_t errorCounter;
 } VL6180X_Sensor;
 
 /* VL6180X sensor ID */
@@ -57,7 +58,8 @@ typedef struct {
 #define VL6180X_2_Q  						0.36225924
 
 /* Counter for reinitialize VL6180X sensor(s) */
-#define VL6180X_REINITIALIZE_COUNTER  		100*(NUMBER_OF_VL6180X_ID)
+#define VL6180X_REINITIALIZE_COUNTER  		20*(NUMBER_OF_VL6180X_ID)
+#define VL6180X_MAX_ERROR_COUNTER  			5
 
 /* Public function prototypes */
 uint8_t VL6180X_WriteReg(uint8_t sensor_addr, uint16_t reg, uint8_t value);
@@ -65,8 +67,13 @@ uint8_t VL6180X_ReadReg(uint8_t sensor_addr, uint16_t reg);
 void VL6180X_Setup(VL6180X_Sensor *sensors);
 uint8_t VL6180X_Init(uint8_t sensor_addr);
 void VL6180X_i2c_Init(VL6180X_Sensor *sensors);
+
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance);
 void VL6180X_ReadAllDistances(VL6180X_Sensor *sensors, uint8_t *counter);
+
+void VL6180X_SendMsgToRead(VL6180X_Sensor *sensors);
+void VL6180X_ReadDistances(VL6180X_Sensor *sensors, uint8_t *counter);
+
 void VL6180X_PrintAllDistances(VL6180X_Sensor *sensors);
 
 #ifdef __cplusplus

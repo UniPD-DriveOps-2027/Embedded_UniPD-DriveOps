@@ -34,6 +34,7 @@ void VL6180X_Setup(VL6180X_Sensor *sensors) {
 	sensors[0].initialized = false;
 	sensors[0].m = VL6180X_1_M;
 	sensors[0].q = VL6180X_1_Q;
+	//sensors[0].errorCounter = 0;
 
 
 	// Sensor 1
@@ -43,6 +44,7 @@ void VL6180X_Setup(VL6180X_Sensor *sensors) {
 	sensors[1].initialized = false;
 	sensors[1].m = VL6180X_2_M;
 	sensors[1].q = VL6180X_2_Q;
+	//sensors[1].errorCounter = 0;
 }
 
 uint8_t VL6180X_Init(uint8_t sensor_addr) {
@@ -98,20 +100,26 @@ void VL6180X_i2c_Init(VL6180X_Sensor *sensors) {
 	 * with separate linear regression
 	 */
 
+	printf("INIT TOFs:   ");
+
 	for (uint8_t i = 0; i < NUMBER_OF_VL6180X_ID; i++) {
 		if (!sensors[i].initialized) {
 			HAL_GPIO_WritePin(sensors[i].xshut_port, sensors[i].xshut_pin, GPIO_PIN_RESET);
-			HAL_Delay(25);
+			HAL_Delay(5);
 			HAL_GPIO_WritePin(sensors[i].xshut_port, sensors[i].xshut_pin, GPIO_PIN_SET);
-			HAL_Delay(25);
+			HAL_Delay(5);
 			VL6180X_WriteReg(VL6180X_DEFAULT_ADDR, VL6180X_REG_I2C_SLAVE_DEV_ADDR, sensors[i].addr);
-			HAL_Delay(10);
+			HAL_Delay(5);
 			if (VL6180X_Init(sensors[i].addr) == 0) {
 				sensors[i].initialized = true;
 			}
 		}
+		printf("   |    ");
+		printf(sensors[i].initialized ? "OK" : "--");
 	}
+	printf(" \r\n");
 }
+
 
 uint8_t VL6180X_ReadDistance(uint8_t sensor_addr, uint8_t *distance) {
 	uint32_t start_time = HAL_GetTick();
@@ -152,6 +160,67 @@ void VL6180X_ReadAllDistances(VL6180X_Sensor *sensors, uint8_t *counter) {
 		}
 	}
 }
+
+
+void VL6180X_SendMsgToRead(VL6180X_Sensor *sensors) {
+
+	// Send the input signal to read
+
+	for (int i = 0; i < NUMBER_OF_VL6180X_ID; i++) {
+		if (sensors[i].initialized) {
+			VL6180X_WriteReg(sensors[i].addr, VL6180X_SYSRANGE_START, 0x01);
+		}
+	}
+}
+
+void VL6180X_ReadDistances(VL6180X_Sensor *sensors, uint8_t *counter) {
+
+    // Minimum 60 ms after calling VL6180X_SendMsgToRead
+    // Read values from sensors
+
+    uint16_t readValue = 0;  // Use uint16_t for more clarity, as readings may exceed 8-bit range
+
+    for (int i = 0; i < NUMBER_OF_VL6180X_ID; i++) {  // Loop over all sensors
+        if (sensors[i].initialized) {  // Check if the sensor has been initialized
+
+            // Check if the measurement is complete (based on the result range status)
+            if ((VL6180X_ReadReg(sensors[i].addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
+
+                // If there was an error reading the sensor, mark it as uninitialized
+                sensors[i].initialized = false;
+                sensors[i].distance = 0;  // Set distance to 0 as error state
+
+                // Shutdown the sensor (disable it)
+                HAL_GPIO_WritePin(sensors[i].xshut_port, sensors[i].xshut_pin, GPIO_PIN_RESET);
+
+            } else {
+                // Sensor read correctly, process the reading
+                readValue = VL6180X_ReadReg(sensors[i].addr, VL6180X_RESULT_RANGE_VAL);
+
+                // Reset the sensor's fresh out of reset register
+                //VL6180X_WriteReg(sensors[i].addr, VL6180X_SYSTEM_FRESH_OUT_OF_RESET, 0x00);
+
+                // Apply linear transformation (using m and q from the sensor's configuration)
+                readValue = sensors[i].m * readValue + sensors[i].q;
+
+                // Clamp the read value to a valid range (0-255)
+                if (readValue > 255) {
+                    sensors[i].distance = 255;
+                } else if (readValue < 5) {
+                    sensors[i].distance = 0;
+                } else {
+                    sensors[i].distance = readValue;
+                }
+            }
+
+        } else {
+            // If the sensor is not initialized, increment the counter
+            (*counter)++;
+        }
+    }
+}
+
+
 
 void VL6180X_PrintAllDistances(VL6180X_Sensor *sensors){
 	for (int i = 0; i < NUMBER_OF_VL6180X_ID; i++) {

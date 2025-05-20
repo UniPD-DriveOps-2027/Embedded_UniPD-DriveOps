@@ -32,6 +32,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#include "ToF/vl6180x_api.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

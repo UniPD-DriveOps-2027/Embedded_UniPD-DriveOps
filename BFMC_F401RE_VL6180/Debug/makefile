@@ -84,8 +84,8 @@ all: main-build
 main-build: BFMC_F401RE_VL6180.elf secondary-outputs
 
 # Tool invocations
-BFMC_F401RE_VL6180.elf BFMC_F401RE_VL6180.map: $(OBJS) $(USER_OBJS) /home/eugen/Desktop/Embedded_Platform/BFMC_F401RE_VL6180/STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "BFMC_F401RE_VL6180.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/eugen/Desktop/Embedded_Platform/BFMC_F401RE_VL6180/STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BFMC_F401RE_VL6180.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+BFMC_F401RE_VL6180.elf BFMC_F401RE_VL6180.map: $(OBJS) $(USER_OBJS) /home/fede/Desktop/Embedded_Platform/BFMC_F401RE_VL6180/STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "BFMC_F401RE_VL6180.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/fede/Desktop/Embedded_Platform/BFMC_F401RE_VL6180/STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BFMC_F401RE_VL6180.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

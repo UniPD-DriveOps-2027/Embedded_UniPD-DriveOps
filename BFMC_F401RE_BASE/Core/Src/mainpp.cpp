@@ -91,7 +91,7 @@ float32_t fir_in_arm, fir_out_arm, fir_state[FIR_LENGHT];
 // VL6180X TOF sensor definition
 VL6180X_Sensor sensorsTOF[NUMBER_OF_VL6180X_ID];
 uint8_t TOFcounterToInitialize = 0;
-uint8_t tmp = 0;
+uint8_t TenMsCounter = 0;
 
 
 uint8_t samplingPID = (uint8_t)((ENC_COUNT_MAX + 1) / 1e3); // [ms]
@@ -236,24 +236,29 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim == &htim10){  //every 10ms
 		pub_flag = true;
 
-		tmp++;
+		TenMsCounter++;
 	}
 
-	if (tmp >= 7){
+	/* For TOF sensors */
 
-		/* every 7 timer 10 (that is 10 ms)
-		 * hence, every 70 ms read values */
+	if (TenMsCounter == 1){
 
-		VL6180X_ReadAllDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+		/* at millisecond 10 prepare sensor to read values */
 
-		VL6180X_PrintAllDistances(&sensorsTOF[0]);
+		VL6180X_SendMsgToRead(&sensorsTOF[0]);
 
-		if (TOFcounterToInitialize >= VL6180X_REINITIALIZE_COUNTER){
-			TOFcounterToInitialize = 0;
-			VL6180X_i2c_Init(&sensorsTOF[0]);
-		}
+	}
+	if (TenMsCounter == 8){
 
-		tmp = 0; // Reset counter
+		/* at millisecond 70 read values */
+
+		VL6180X_ReadDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+
+		//VL6180X_PrintAllDistances(&sensorsTOF[0]);
+
+
+
+		TenMsCounter = 0; // Reset counter
 	}
 
 }
@@ -386,10 +391,17 @@ void loop(void)
 			VL6180X_left_msg.data = sensorsTOF[1].distance;
 			VL6180X_left_pub.publish(&VL6180X_left_msg);
 
-
 			pub_flag = false;
 		}
 	}
+
+
+	// in case of hot swap of TOF
+	if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
+		TOFcounterToInitialize = 0;
+		VL6180X_i2c_Init(&sensorsTOF[0]);
+	}
+
 	HAL_Delay(1);
 	nh.spinOnce();
 }

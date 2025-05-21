@@ -2,7 +2,7 @@
  * vl6180.c
  *
  *  Created on: May 14, 2025
- *      Author: eugen
+ *      Author: Stefano, Eugen
  */
 
 #include "vl6180.h"

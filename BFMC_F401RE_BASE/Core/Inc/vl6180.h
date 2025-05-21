@@ -2,7 +2,7 @@
  * vl6180.h
  *
  *  Created on: May 14, 2025
- *      Author: eugen
+ *      Author: Stefano, Eugen
  */
 
 #ifndef INC_VL6180_H_

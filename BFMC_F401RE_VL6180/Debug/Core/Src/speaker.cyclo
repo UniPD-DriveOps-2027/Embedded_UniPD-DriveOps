@@ -1,0 +1,4 @@
+../Core/Src/speaker.c:13:6:playTone	2
+../Core/Src/speaker.c:28:6:playMelody	3
+../Core/Src/speaker.c:39:6:policeSiren	4
+../Core/Src/speaker.c:52:6:playClick	1

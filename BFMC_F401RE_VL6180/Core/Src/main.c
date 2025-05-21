@@ -33,19 +33,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define NOTE_G3  196
-#define NOTE_F3  175
-#define NOTE_A3  220
-#define NOTE_C4  262
-#define NOTE_D4  294
-#define NOTE_E4  330
-#define NOTE_F4  349
-#define NOTE_G4  392
-#define NOTE_A4  440
-#define NOTE_B4  494
-#define NOTE_C5  523
-
-
+#include "speaker.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,10 +43,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-void playTone(uint32_t frequency_hz, uint32_t duration_ms);
-void playMelody(const uint16_t melody[][2], uint16_t notes);
-void policeSiren(uint32_t cycles);
-void playClick(uint32_t duration_ms);
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,46 +66,7 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void playTone(uint32_t frequency_hz, uint32_t duration_ms) {
-	if(frequency_hz == 0) {
-		htim1.Instance->CCR1 = 0;  // Silence
-		HAL_Delay(duration_ms);
-		return;
-	}
 
-	uint32_t period = (1000000 / frequency_hz) - 1;  // 1MHz clock
-
-	htim1.Instance->ARR = period;          // Set frequency
-	htim1.Instance->CCR1 = period / 2;    // 50% duty cycle
-	HAL_Delay(duration_ms);
-	htim1.Instance->CCR1 = 0;             // Silence
-}
-
-void playMelody(const uint16_t melody[][2], uint16_t notes) {
-	for (uint16_t i = 0; i < notes; i++) {
-		playTone(melody[i][0], melody[i][1]);
-		HAL_Delay(50);  // Short pause between notes
-	}
-}
-
-void policeSiren(uint32_t cycles) {
-	for (uint32_t i = 0; i < cycles; i++) {
-		// Rising pitch
-		for (uint32_t freq = 800; freq <= 1500; freq += 10) {
-			playTone(freq, 10);
-		}
-		// Falling pitch
-		for (uint32_t freq = 1500; freq >= 800; freq -= 10) {
-			playTone(freq, 10);
-		}
-	}
-}
-
-void playClick(uint32_t duration_ms) {
-	htim1.Instance->CCR1 = 10;  // Very short pulse
-	HAL_Delay(duration_ms);
-	htim1.Instance->CCR1 = 0;
-}
 
 /* USER CODE END 0 */
 
@@ -161,55 +107,99 @@ int main(void)
 	MX_I2C1_Init();
 	MX_TIM1_Init();
 	MX_ADC1_Init();
+
 	/* USER CODE BEGIN 2 */
+
+	// Melody definitions
+	const uint16_t imperialMarch[][2] = {
+			{NOTE_A4, 4}, {NOTE_A4, 4}, {NOTE_A4, 4},
+			{NOTE_F4, 3}, {NOTE_C5, 4},
+			{NOTE_A4, 4}, {NOTE_F4, 3}, {NOTE_C5, 8},
+			{NOTE_A4, 2},
+			{NOTE_E5, 4}, {NOTE_E5, 4}, {NOTE_E5, 4},
+			{NOTE_F5, 3}, {NOTE_C5, 4},
+			{NOTE_GS4, 4}, {NOTE_F4, 3}, {NOTE_C5, 8},
+			{NOTE_A4, 2}
+	};
+
+	const uint16_t superMario[][2] = {
+			{NOTE_E5, 8}, {NOTE_E5, 8}, {NOTE_REST, 8}, {NOTE_E5, 8},
+			{NOTE_REST, 8}, {NOTE_C5, 8}, {NOTE_E5, 8},
+			{NOTE_G5, 4}, {NOTE_REST, 4},
+			{NOTE_G4, 8}, {NOTE_REST, 4},
+			{NOTE_C5, 8}, {NOTE_G4, 8}, {NOTE_E4, 8},
+			{NOTE_A4, 4}, {NOTE_B4, 4}, {NOTE_AS4, 8}, {NOTE_A4, 4},
+			{NOTE_G4, 8}, {NOTE_E5, 4}, {NOTE_G5, 4}, {NOTE_A5, 4},
+			{NOTE_F5, 8}, {NOTE_G5, 8},
+			{NOTE_REST, 8}, {NOTE_E5, 4}, {NOTE_C5, 8}, {NOTE_D5, 8}, {NOTE_B4, 4}
+	};
+
+	const uint16_t odeToJoy[][2] = {
+			{NOTE_E4, 4}, {NOTE_E4, 4}, {NOTE_F4, 4}, {NOTE_G4, 4},
+			{NOTE_G4, 4}, {NOTE_F4, 4}, {NOTE_E4, 4}, {NOTE_D4, 4},
+			{NOTE_C4, 4}, {NOTE_C4, 4}, {NOTE_D4, 4}, {NOTE_E4, 4},
+			{NOTE_E4, 6}, {NOTE_D4, 2}, {NOTE_D4, 2},
+
+			{NOTE_E4, 4}, {NOTE_E4, 4}, {NOTE_F4, 4}, {NOTE_G4, 4},
+			{NOTE_G4, 4}, {NOTE_F4, 4}, {NOTE_E4, 4}, {NOTE_D4, 4},
+			{NOTE_C4, 4}, {NOTE_C4, 4}, {NOTE_D4, 4}, {NOTE_E4, 4},
+			{NOTE_D4, 6}, {NOTE_C4, 2}, {NOTE_C4, 2}
+	};
+
+
+	// Start PWM
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+	uint8_t playMusic = 0;
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-
-	/* USER CODE BEGIN 2 */
-
-	// Melody definitions
-	const uint16_t testMelody[][2] = {
-			{NOTE_C4, 200}, {NOTE_D4, 200}, {NOTE_E4, 200}, {NOTE_F4, 400},
-			{NOTE_G4, 400}, {NOTE_A4, 200}, {NOTE_B4, 200}, {NOTE_C5, 800}
-	};
-
-	const uint16_t marioMelody[][2] = {
-			{NOTE_E4, 150}, {NOTE_E4, 150}, {NOTE_E4, 150}, {NOTE_C4, 300},
-			{NOTE_E4, 300}, {NOTE_G4, 600}, {NOTE_G3, 600}
-	};
-
-	// Start PWM
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-
-	/* USER CODE END 2 */
-
 	while (1) {
 
-		/* USER CODE BEGIN 2 */
-		playTone(1000, 500);  // Play 1kHz tone for 500ms
-		playTone(2000, 500);  // Play 2kHz tone for 500ms
+		if (playMusic) {
 
-		playMelody(testMelody, 8);  // Play test melody
-		HAL_Delay(1000);
 
-		policeSiren(2);  // Play police siren twice
-		HAL_Delay(1000);
+			playTone(1000, 500);  // Play 1kHz tone for 500ms
+			playTone(2000, 500);  // Play 2kHz tone for 500ms
+			HAL_Delay(1000);
 
-		playMelody(marioMelody, 7);  // Play Mario theme snippet
-		HAL_Delay(2000);
+			for(int i=0; i<5; i++) {
+				playClick(100);
+				HAL_Delay(100);
+			}
 
-		// Play 5 quick clicks
-		for(int i=0; i<5; i++) {
-			playClick(50);
-			HAL_Delay(100);
+			playMelody(imperialMarch, sizeof(imperialMarch) / sizeof(imperialMarch[0]), 150);
+			HAL_Delay(1000);
+
+			for(int i=0; i<5; i++) {
+				playClick(100);
+				HAL_Delay(100);
+			}
+
+			playMelody(superMario, sizeof(superMario) / sizeof(superMario[0]), 240);
+			HAL_Delay(1000);
+
+			for(int i=0; i<5; i++) {
+				playClick(100);
+				HAL_Delay(100);
+			}
+
+			playMelody(odeToJoy, sizeof(odeToJoy) / sizeof(odeToJoy[0]), 130);
+			HAL_Delay(1000);
+
+			//policeSiren(2);  // Play police siren twice
+			//HAL_Delay(1000);
+
+			// Play 5 quick clicks
+			for(int i=0; i<5; i++) {
+				playClick(100);
+				HAL_Delay(100);
+			}
 		}
-		HAL_Delay(1000);
-		/* USER CODE END 2 */
+		HAL_Delay(3000);
 
-		/* USER CODE BEGIN WHILE */
 	}
 	/* USER CODE END WHILE */
 

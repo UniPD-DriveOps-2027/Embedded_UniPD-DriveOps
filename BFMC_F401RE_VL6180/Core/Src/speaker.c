@@ -54,3 +54,19 @@ void playClick(uint32_t duration_ms) {
 	HAL_Delay(duration_ms);
 	htim1.Instance->CCR1 = 0;
 }
+
+
+void playOdeToJoy(){
+	uint16_t odeToJoy[][2] = {
+			{NOTE_E4, 4}, {NOTE_E4, 4}, {NOTE_F4, 4}, {NOTE_G4, 4},
+			{NOTE_G4, 4}, {NOTE_F4, 4}, {NOTE_E4, 4}, {NOTE_D4, 4},
+			{NOTE_C4, 4}, {NOTE_C4, 4}, {NOTE_D4, 4}, {NOTE_E4, 4},
+			{NOTE_E4, 6}, {NOTE_D4, 2}, {NOTE_D4, 2},
+
+			{NOTE_E4, 4}, {NOTE_E4, 4}, {NOTE_F4, 4}, {NOTE_G4, 4},
+			{NOTE_G4, 4}, {NOTE_F4, 4}, {NOTE_E4, 4}, {NOTE_D4, 4},
+			{NOTE_C4, 4}, {NOTE_C4, 4}, {NOTE_D4, 4}, {NOTE_E4, 4},
+			{NOTE_D4, 6}, {NOTE_C4, 2}, {NOTE_C4, 2}
+	};
+	playMelody(odeToJoy, sizeof(odeToJoy) / sizeof(odeToJoy[0]), 130);
+}

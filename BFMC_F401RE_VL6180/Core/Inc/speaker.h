@@ -112,6 +112,8 @@ void playMelody(const uint16_t melody[][2], uint16_t notes, uint16_t tempo);
 void policeSiren(uint32_t cycles);
 void playClick(uint32_t duration_ms);
 
+void playOdeToJoy();
+
 #ifdef __cplusplus
 }
 #endif

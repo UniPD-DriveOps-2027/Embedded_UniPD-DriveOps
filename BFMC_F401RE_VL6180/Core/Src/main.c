@@ -149,14 +149,16 @@ int main(void)
 
 	// Start PWM
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-
+	//HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);  // Stop sound
 	uint8_t playMusic = 0;
+
+	playOdeToJoy();
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	while (1) {
+	while (0) {
 
 		if (playMusic) {
 
@@ -170,7 +172,7 @@ int main(void)
 				HAL_Delay(100);
 			}
 
-			playMelody(imperialMarch, sizeof(imperialMarch) / sizeof(imperialMarch[0]), 150);
+			//playMelody(imperialMarch, sizeof(imperialMarch) / sizeof(imperialMarch[0]), 150);
 			HAL_Delay(1000);
 
 			for(int i=0; i<5; i++) {
@@ -178,7 +180,7 @@ int main(void)
 				HAL_Delay(100);
 			}
 
-			playMelody(superMario, sizeof(superMario) / sizeof(superMario[0]), 240);
+			//playMelody(superMario, sizeof(superMario) / sizeof(superMario[0]), 240);
 			HAL_Delay(1000);
 
 			for(int i=0; i<5; i++) {
@@ -186,10 +188,10 @@ int main(void)
 				HAL_Delay(100);
 			}
 
-			playMelody(odeToJoy, sizeof(odeToJoy) / sizeof(odeToJoy[0]), 130);
+			//playMelody(odeToJoy, sizeof(odeToJoy) / sizeof(odeToJoy[0]), 130);
 			HAL_Delay(1000);
 
-			//policeSiren(2);  // Play police siren twice
+			policeSiren(3);  // Play police siren twice
 			//HAL_Delay(1000);
 
 			// Play 5 quick clicks

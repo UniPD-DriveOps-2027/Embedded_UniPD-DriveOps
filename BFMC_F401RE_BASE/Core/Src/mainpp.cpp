@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 #include "vl6180.h"
-
+#include "speaker.h"
 
 // Constants
 #define TRANSMISSION_RATIO 		14.6 			//16	// both wheels placed on the ground are rotating at 1/16th of the motor's speed
@@ -109,12 +109,12 @@ std_msgs::Bool posFeedback_msg;
 std_msgs::UInt8 VL6180X_front_msg;
 std_msgs::UInt8 VL6180X_left_msg;
 
-
 // command callbacks
 void command_speed_callback(const std_msgs::Float32& msg);
 void command_steer_callback(const std_msgs::Float32& msg);
 void command_stop_callback(const std_msgs::Float32& msg);
 void command_pos_callback(const std_msgs::Float32& msg);
+void speaker_callback(const std_msgs::UInt8& msg);
 
 void stop(float angle);
 void steer(float angle);
@@ -132,13 +132,13 @@ float readADC(void);
 ros::Publisher carSpeed_pub("automobile/encoder/speed", &carSpeed_msg);
 ros::Publisher globalDistance_pub("automobile/encoder/distance", &globalDistance_msg);
 ros::Publisher posFeedback_pub("automobile/feedback/position", &posFeedback_msg);
-ros::Publisher VL6180X_front_pub("automobile/TOF/front", &VL6180X_front_msg);
-ros::Publisher VL6180X_left_pub("automobile/TOF/left", &VL6180X_left_msg);
+ros::Publisher VL6180X_front_pub("automobile/tof/front", &VL6180X_front_msg);
+ros::Publisher VL6180X_left_pub("automobile/tof/left", &VL6180X_left_msg);
 ros::Subscriber<std_msgs::Float32> speed_sub("automobile/command/speed", &command_speed_callback);
 ros::Subscriber<std_msgs::Float32> steer_sub("automobile/command/steer", &command_steer_callback);
 ros::Subscriber<std_msgs::Float32> stop_sub("automobile/command/stop", &command_stop_callback);
 ros::Subscriber<std_msgs::Float32> pos_sub("automobile/command/position", &command_pos_callback);
-
+ros::Subscriber<std_msgs::UInt8> speaker_sub("automobile/speaker", &speaker_callback);
 
 
 
@@ -164,6 +164,21 @@ void command_stop_callback(const std_msgs::Float32& msg){
 
 void command_pos_callback(const std_msgs::Float32& msg){
 	position(msg.data);
+}
+
+void speaker_callback(const std_msgs::UInt8& msg){
+	// Enable sound
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+	if (msg.data == 1) {
+		playOdeToJoy();
+	}
+	if (msg.data == 2) {
+		playInTheEnd();
+	}
+
+	// Disable sound
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 }
 
 
@@ -318,6 +333,7 @@ void setup(void)
 	nh.subscribe(steer_sub);
 	nh.subscribe(stop_sub);
 	nh.subscribe(pos_sub);
+	nh.subscribe(speaker_sub);
 
 	// Set PID SPEED controller parameters
 	SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
@@ -392,15 +408,15 @@ void loop(void)
 			VL6180X_left_pub.publish(&VL6180X_left_msg);
 
 			pub_flag = false;
+
+			// in case of hot swap of TOF
+			if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
+				TOFcounterToInitialize = 0;
+				//VL6180X_i2c_Init(&sensorsTOF[0]);
+			}
 		}
 	}
 
-
-	// in case of hot swap of TOF
-	if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
-		TOFcounterToInitialize = 0;
-		VL6180X_i2c_Init(&sensorsTOF[0]);
-	}
 
 	HAL_Delay(1);
 	nh.spinOnce();

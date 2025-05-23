@@ -71,6 +71,7 @@ double motorPWM=0.0, servoPWM=0.0;// [tick], [tick]: control variables
 bool isSpeedControl 	= true;
 bool isPositionControl 	= false;
 bool posAckDone=false, reachedPosition=false, pub_flag=false;
+bool checkEmergencyBrakeArena = false;
 
 
 // DEBUGGING
@@ -115,6 +116,7 @@ void command_steer_callback(const std_msgs::Float32& msg);
 void command_stop_callback(const std_msgs::Float32& msg);
 void command_pos_callback(const std_msgs::Float32& msg);
 void speaker_callback(const std_msgs::UInt8& msg);
+void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg);
 
 void stop(float angle);
 void steer(float angle);
@@ -139,7 +141,7 @@ ros::Subscriber<std_msgs::Float32> steer_sub("automobile/command/steer", &comman
 ros::Subscriber<std_msgs::Float32> stop_sub("automobile/command/stop", &command_stop_callback);
 ros::Subscriber<std_msgs::Float32> pos_sub("automobile/command/position", &command_pos_callback);
 ros::Subscriber<std_msgs::UInt8> speaker_sub("automobile/speaker", &speaker_callback);
-
+ros::Subscriber<std_msgs::Bool> checkEmergencyBrakeArena_sub("automobile/arena", &checkEmergencyBrakeArena_callback);
 
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
@@ -181,6 +183,10 @@ void speaker_callback(const std_msgs::UInt8& msg){
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 }
 
+void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg){
+	checkEmergencyBrakeArena = msg.data;
+}
+
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -199,37 +205,41 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		globalDistance = globalDistance + carSpeed * DT;		// [m]: signed distance run by the car, i.e. curvilinear abscissa
 		localDistance = globalDistance - localDistanceOrigin;	// [m]: signed relative distance run by the car, i.e. curvilinear abscissa
 
+		if (!checkEmergencyBrakeArena || sensorsTOF[1].distance < 5 || sensorsTOF[1].distance > 60){
 
-		// ---------- DOUBLE LOOP CONTROL ----------
-		// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
-		if(isPositionControl){
+			// ---------- DOUBLE LOOP CONTROL ----------
+			// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
+			if(isPositionControl){
 
-			if(isClose(localDistance, localDistanceRef) and not posAckDone){
-				reachedPosition = true;
-				speedTarget = 0.0;
-				isPositionControl = false; //just added
+				if(isClose(localDistance, localDistanceRef) and not posAckDone){
+					reachedPosition = true;
+					speedTarget = 0.0;
+					isPositionControl = false; //just added
+				}
+				else{
+					reachedPosition = false;
+					PositionController.Compute();
+					speedTarget = speedTargetPos;
+				}
 			}
-			else{
-				reachedPosition = false;
-				PositionController.Compute();
-				speedTarget = speedTargetPos;
+
+			// ---------- INNER LOOP: SPEED CONTROL - PID ----------
+			if(isSpeedControl){
+
+				speedRef = speedTarget;
+				SpeedController.Compute();// SPEED control action
 			}
+
+
+			// ---------- ACTUATION - SPEED ----------
+
+			if(abs(speedRef) == 0.00 or abs(motorPWM)<0.00001)
+				drive_pwm(0);
+			else
+				drive_pwm(motorPWM);
+		} else {
+			stop(steerRef);
 		}
-
-		// ---------- INNER LOOP: SPEED CONTROL - PID ----------
-		if(isSpeedControl){
-
-			speedRef = speedTarget;
-			SpeedController.Compute();// SPEED control action
-		}
-
-
-		// ---------- ACTUATION - SPEED ----------
-
-		if(abs(speedRef) == 0.00 or abs(motorPWM)<0.00001)
-			drive_pwm(0);
-		else
-			drive_pwm(motorPWM);
 
 		// Drive with pwm from topics
 		//drive_pwm(speedTarget);
@@ -334,6 +344,7 @@ void setup(void)
 	nh.subscribe(stop_sub);
 	nh.subscribe(pos_sub);
 	nh.subscribe(speaker_sub);
+	nh.subscribe(checkEmergencyBrakeArena_sub);
 
 	// Set PID SPEED controller parameters
 	SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE

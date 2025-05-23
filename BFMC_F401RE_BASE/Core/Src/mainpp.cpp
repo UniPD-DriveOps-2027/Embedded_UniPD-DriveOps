@@ -402,9 +402,9 @@ void loop(void)
 
 			}
 
-			VL6180X_front_msg.data = sensorsTOF[0].distance;
+			VL6180X_front_msg.data = sensorsTOF[1].distance;
 			VL6180X_front_pub.publish(&VL6180X_front_msg);
-			VL6180X_left_msg.data = sensorsTOF[1].distance;
+			VL6180X_left_msg.data = sensorsTOF[0].distance;
 			VL6180X_left_pub.publish(&VL6180X_left_msg);
 
 			pub_flag = false;

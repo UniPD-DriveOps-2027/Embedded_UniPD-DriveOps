@@ -206,9 +206,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		localDistance = globalDistance - localDistanceOrigin;	// [m]: signed relative distance run by the car, i.e. curvilinear abscissa
 
 
-		if (sensorsTOF[1].distance > 5 && sensorsTOF[1].distance < 90){
+		if (sensorsTOF[1].distance > 5 && sensorsTOF[1].distance < 80){
 			inRangeForEmergencyBrakeArena = true;
-		} else {
+		}
+		if (inRangeForEmergencyBrakeArena == true && sensorsTOF[1].distance > 100){
 			inRangeForEmergencyBrakeArena = false;
 		}
 
@@ -423,7 +424,6 @@ void loop(void)
 			if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
 				TOFcounterToInitialize = 0;
 				VL6180X_i2c_Init(&sensorsTOF[0]);
-
 			}
 		}
 	}

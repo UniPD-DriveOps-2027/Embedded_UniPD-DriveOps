@@ -72,7 +72,7 @@ bool isSpeedControl 	= true;
 bool isPositionControl 	= false;
 bool posAckDone=false, reachedPosition=false, pub_flag=false;
 bool checkEmergencyBrakeArena = false;
-
+bool inRangeForEmergencyBrakeArena = false;
 
 // DEBUGGING
 uint8_t counter;
@@ -205,7 +205,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		globalDistance = globalDistance + carSpeed * DT;		// [m]: signed distance run by the car, i.e. curvilinear abscissa
 		localDistance = globalDistance - localDistanceOrigin;	// [m]: signed relative distance run by the car, i.e. curvilinear abscissa
 
-		if (!checkEmergencyBrakeArena || sensorsTOF[1].distance < 5 || sensorsTOF[1].distance > 60){
+
+		if (sensorsTOF[1].distance > 5 && sensorsTOF[1].distance < 90){
+			inRangeForEmergencyBrakeArena = true;
+		} else {
+			inRangeForEmergencyBrakeArena = false;
+		}
+
+		if (!checkEmergencyBrakeArena || !inRangeForEmergencyBrakeArena){
 
 			// ---------- DOUBLE LOOP CONTROL ----------
 			// ---------- OUTER LOOP: POSITION CONTROL - PID ----------
@@ -238,7 +245,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			else
 				drive_pwm(motorPWM);
 		} else {
-			stop(steerRef);
+			//stop(steerRef);
+			drive_pwm(0);
 		}
 
 		// Drive with pwm from topics
@@ -267,22 +275,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	/* For TOF sensors */
 
 	if (TenMsCounter == 1){
-
 		/* at millisecond 10 prepare sensor to read values */
-
 		VL6180X_SendMsgToRead(&sensorsTOF[0]);
-
 	}
 	if (TenMsCounter == 8){
-
 		/* at millisecond 70 read values */
-
 		VL6180X_ReadDistances(&sensorsTOF[0], &TOFcounterToInitialize);
-
 		//VL6180X_PrintAllDistances(&sensorsTOF[0]);
-
-
-
 		TenMsCounter = 0; // Reset counter
 	}
 
@@ -423,7 +422,8 @@ void loop(void)
 			// in case of hot swap of TOF
 			if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
 				TOFcounterToInitialize = 0;
-				//VL6180X_i2c_Init(&sensorsTOF[0]);
+				VL6180X_i2c_Init(&sensorsTOF[0]);
+
 			}
 		}
 	}

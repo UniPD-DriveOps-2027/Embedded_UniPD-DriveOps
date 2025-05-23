@@ -27,24 +27,21 @@ uint8_t VL6180X_ReadReg(uint8_t sensor_addr, uint16_t reg) {
 }
 
 void VL6180X_Setup(VL6180X_Sensor *sensors) {
-	// Sensor 0
+	// Sensor 0 - left
 	sensors[0].addr = VL6180X_1_ADDR;
 	sensors[0].xshut_pin  = VL6180X_1_SHUT_PIN;
 	sensors[0].xshut_port = VL6180X_1_SHUT_PORT;
 	sensors[0].initialized = false;
 	sensors[0].m = VL6180X_1_M;
 	sensors[0].q = VL6180X_1_Q;
-	//sensors[0].errorCounter = 0;
 
-
-	// Sensor 1
+	// Sensor 1 - front
 	sensors[1].addr = VL6180X_2_ADDR;
 	sensors[1].xshut_pin  = VL6180X_2_SHUT_PIN;
 	sensors[1].xshut_port = VL6180X_2_SHUT_PORT;
 	sensors[1].initialized = false;
 	sensors[1].m = VL6180X_2_M;
 	sensors[1].q = VL6180X_2_Q;
-	//sensors[1].errorCounter = 0;
 }
 
 uint8_t VL6180X_Init(uint8_t sensor_addr) {
@@ -100,7 +97,7 @@ void VL6180X_i2c_Init(VL6180X_Sensor *sensors) {
 	 * with separate linear regression
 	 */
 
-	printf("INIT TOFs:   ");
+	//printf("INIT TOFs:   ");
 
 	for (uint8_t i = 0; i < NUMBER_OF_VL6180X_ID; i++) {
 		if (!sensors[i].initialized) {
@@ -114,10 +111,10 @@ void VL6180X_i2c_Init(VL6180X_Sensor *sensors) {
 				sensors[i].initialized = true;
 			}
 		}
-		printf("   |    ");
-		printf(sensors[i].initialized ? "OK" : "--");
+		//printf("   |    ");
+		//printf(sensors[i].initialized ? "OK" : "--");
 	}
-	printf(" \r\n");
+	//printf(" \r\n");
 }
 
 
@@ -186,7 +183,7 @@ void VL6180X_ReadDistances(VL6180X_Sensor *sensors, uint8_t *counter) {
             // Check if the measurement is complete (based on the result range status)
             if ((VL6180X_ReadReg(sensors[i].addr, VL6180X_RESULT_RANGE_STATUS) & 0x01) == 0) {
 
-                // If there was an error reading the sensor, mark it as uninitialized
+            	/* Error reading ith VL6180X */
                 sensors[i].initialized = false;
                 sensors[i].distance = 0;  // Set distance to 0 as error state
 

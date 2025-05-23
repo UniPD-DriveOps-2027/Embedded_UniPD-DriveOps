@@ -59,9 +59,9 @@
 ../Core/Src/mainpp.cpp:171:6:void speaker_callback(const std_msgs::UInt8&)	16	static
 ../Core/Src/mainpp.cpp:186:6:void checkEmergencyBrakeArena_callback(const std_msgs::Bool&)	16	static
 ../Core/Src/mainpp.cpp:191:6:void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*)	24	static
-../Core/Src/mainpp.cpp:291:6:void HAL_GPIO_EXTI_Callback(uint16_t)	16	static
-../Core/Src/mainpp.cpp:330:6:void setup()	16	static
-../Core/Src/mainpp.cpp:392:6:void loop()	8	static
+../Core/Src/mainpp.cpp:290:6:void HAL_GPIO_EXTI_Callback(uint16_t)	16	static
+../Core/Src/mainpp.cpp:329:6:void setup()	16	static
+../Core/Src/mainpp.cpp:391:6:void loop()	8	static
 ../Core/Src/mainpp.cpp:437:6:void stop(float)	16	static
 ../Core/Src/mainpp.cpp:452:6:void speed(float)	16	static
 ../Core/Src/mainpp.cpp:470:6:void steer(float)	24	static

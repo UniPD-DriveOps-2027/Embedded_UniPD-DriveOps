@@ -1,10 +1,10 @@
 ../Core/Src/vl6180.c:16:9:VL6180X_WriteReg	32	static
 ../Core/Src/vl6180.c:21:9:VL6180X_ReadReg	32	static
 ../Core/Src/vl6180.c:29:6:VL6180X_Setup	16	static
-../Core/Src/vl6180.c:50:9:VL6180X_Init	16	static
-../Core/Src/vl6180.c:94:6:VL6180X_i2c_Init	24	static
-../Core/Src/vl6180.c:124:9:VL6180X_ReadDistance	24	static
-../Core/Src/vl6180.c:141:6:VL6180X_ReadAllDistances	32	static
-../Core/Src/vl6180.c:165:6:VL6180X_SendMsgToRead	24	static
-../Core/Src/vl6180.c:176:6:VL6180X_ReadDistances	24	static
-../Core/Src/vl6180.c:225:6:VL6180X_PrintAllDistances	24	static
+../Core/Src/vl6180.c:47:9:VL6180X_Init	16	static
+../Core/Src/vl6180.c:91:6:VL6180X_i2c_Init	24	static
+../Core/Src/vl6180.c:121:9:VL6180X_ReadDistance	24	static
+../Core/Src/vl6180.c:138:6:VL6180X_ReadAllDistances	32	static
+../Core/Src/vl6180.c:162:6:VL6180X_SendMsgToRead	24	static
+../Core/Src/vl6180.c:173:6:VL6180X_ReadDistances	24	static
+../Core/Src/vl6180.c:222:6:VL6180X_PrintAllDistances	24	static

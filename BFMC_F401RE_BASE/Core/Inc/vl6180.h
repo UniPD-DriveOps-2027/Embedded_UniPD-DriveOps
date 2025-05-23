@@ -58,7 +58,7 @@ typedef struct {
 #define VL6180X_2_Q  						0.36225924
 
 /* Counter for reinitialize VL6180X sensor(s) */
-#define VL6180X_REINITIALIZE_COUNTER  		500*(NUMBER_OF_VL6180X_ID)
+#define VL6180X_REINITIALIZE_COUNTER  		10*(NUMBER_OF_VL6180X_ID)
 
 /* Public function prototypes */
 uint8_t VL6180X_WriteReg(uint8_t sensor_addr, uint16_t reg, uint8_t value);

@@ -440,7 +440,6 @@ void loop(void)
 			// turn on/off leds
 			if (flagLed) {
 				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 900);
-				printf("led on");
 			} else {
 				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
 			}

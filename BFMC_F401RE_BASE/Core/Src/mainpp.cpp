@@ -376,8 +376,6 @@ void setup(void)
 	//initialize the filter
 	arm_fir_init_f32(&fir_instance, FIR_LENGHT, fir_coefficients, fir_state, 1);
 
-
-
 	// VL6180X TOF sensors initialization
 	VL6180X_Setup(&sensorsTOF[0]);
 	VL6180X_i2c_Init(&sensorsTOF[0]);

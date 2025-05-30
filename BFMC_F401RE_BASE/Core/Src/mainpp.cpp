@@ -68,11 +68,12 @@ long encoderTotal=0;
 // CONTROL variables
 double motorPWM=0.0, servoPWM=0.0;// [tick], [tick]: control variables
 // STATE of the CAR
-bool isSpeedControl 	= true;
-bool isPositionControl 	= false;
+bool isSpeedControl = true;
+bool isPositionControl = false;
 bool posAckDone=false, reachedPosition=false, pub_flag=false;
 bool checkEmergencyBrakeArena = false;
 bool inRangeForEmergencyBrakeArena = false;
+bool flagLed = false;
 
 // DEBUGGING
 uint8_t counter;
@@ -117,6 +118,7 @@ void command_stop_callback(const std_msgs::Float32& msg);
 void command_pos_callback(const std_msgs::Float32& msg);
 void speaker_callback(const std_msgs::UInt8& msg);
 void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg);
+void leds_callback(const std_msgs::Bool& msg);
 
 void stop(float angle);
 void steer(float angle);
@@ -142,6 +144,8 @@ ros::Subscriber<std_msgs::Float32> stop_sub("automobile/command/stop", &command_
 ros::Subscriber<std_msgs::Float32> pos_sub("automobile/command/position", &command_pos_callback);
 ros::Subscriber<std_msgs::UInt8> speaker_sub("automobile/speaker", &speaker_callback);
 ros::Subscriber<std_msgs::Bool> checkEmergencyBrakeArena_sub("automobile/arena", &checkEmergencyBrakeArena_callback);
+ros::Subscriber<std_msgs::Bool> leds_sub("automobile/leds", &leds_callback);
+
 
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
@@ -185,6 +189,10 @@ void speaker_callback(const std_msgs::UInt8& msg){
 
 void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg){
 	checkEmergencyBrakeArena = msg.data;
+}
+
+void leds_callback(const std_msgs::Bool& msg){
+	flagLed = msg.data;
 }
 
 
@@ -345,6 +353,7 @@ void setup(void)
 	nh.subscribe(pos_sub);
 	nh.subscribe(speaker_sub);
 	nh.subscribe(checkEmergencyBrakeArena_sub);
+	nh.subscribe(leds_sub);
 
 	// Set PID SPEED controller parameters
 	SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
@@ -364,6 +373,8 @@ void setup(void)
 	//initialize the filter
 	arm_fir_init_f32(&fir_instance, FIR_LENGHT, fir_coefficients, fir_state, 1);
 
+
+
 	// VL6180X TOF sensors initialization
 	VL6180X_Setup(&sensorsTOF[0]);
 	VL6180X_i2c_Init(&sensorsTOF[0]);
@@ -378,7 +389,12 @@ void setup(void)
 	HAL_TIM_Base_Start(&htim4);// ENCODER COUNTER
 	HAL_TIM_Base_Start_IT(&htim11);// ENCODER SPEED AND SPEED CONTROL
 	HAL_TIM_Base_Start_IT(&htim10);// PUBLISH TIMER
-	HAL_TIM_Base_Start(&htim1);// TOF SENSORS TIMER
+	HAL_TIM_Base_Start(&htim1);// SPEAKER AND LEDS TIMER
+
+
+
+	// pwm for leds
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
 	// stop the car
 	speedTarget = 0.0;
@@ -402,6 +418,7 @@ void loop(void)
 			carSpeed_msg.data = carSpeed;
 			carSpeed_pub.publish(&carSpeed_msg);
 
+
 			globalDistance_msg.data = globalDistance;
 			globalDistance_pub.publish(&globalDistance_msg);
 
@@ -417,6 +434,14 @@ void loop(void)
 			VL6180X_front_pub.publish(&VL6180X_front_msg);
 			VL6180X_left_msg.data = sensorsTOF[0].distance;
 			VL6180X_left_pub.publish(&VL6180X_left_msg);
+
+			// turn on/off leds
+			if (flagLed) {
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 900);
+				printf("led on");
+			} else {
+				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
+			}
 
 			pub_flag = false;
 

@@ -1,0 +1,8 @@
+../Core/Src/vl6180_dual_dma.c:26:13:writeRegBlocking	32	static
+../Core/Src/vl6180_dual_dma.c:34:6:VL6180_InitSensors	24	static
+../Core/Src/vl6180_dual_dma.c:53:6:VL6180_StartMeasurement	32	static
+../Core/Src/vl6180_dual_dma.c:66:6:VL6180_DMA_TxCpltCallback	40	static
+../Core/Src/vl6180_dual_dma.c:79:6:VL6180_DMA_RxCpltCallback	24	static
+../Core/Src/vl6180_dual_dma.c:106:9:VL6180_IsDataReady	16	static
+../Core/Src/vl6180_dual_dma.c:111:9:VL6180_GetDistance	16	static
+../Core/Src/vl6180_dual_dma.c:117:6:HAL_I2C_ErrorCallback	16	static

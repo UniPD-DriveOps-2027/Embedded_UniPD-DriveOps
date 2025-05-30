@@ -37,6 +37,11 @@
 ../Core/Inc/std_msgs/Float32.h:39:17:virtual int std_msgs::Float32::deserialize(unsigned char*)	24	static
 ../Core/Inc/std_msgs/Float32.h:56:26:virtual const char* std_msgs::Float32::getType()	16	static
 ../Core/Inc/std_msgs/Float32.h:57:26:virtual const char* std_msgs::Float32::getMD5()	16	static
+../Core/Inc/std_msgs/UInt8.h:18:5:std_msgs::UInt8::UInt8()	16	static
+../Core/Inc/std_msgs/UInt8.h:23:17:virtual int std_msgs::UInt8::serialize(unsigned char*) const	24	static
+../Core/Inc/std_msgs/UInt8.h:31:17:virtual int std_msgs::UInt8::deserialize(unsigned char*)	24	static
+../Core/Inc/std_msgs/UInt8.h:39:26:virtual const char* std_msgs::UInt8::getType()	16	static
+../Core/Inc/std_msgs/UInt8.h:40:26:virtual const char* std_msgs::UInt8::getMD5()	16	static
 ../Core/Inc/std_msgs/Bool.h:18:5:std_msgs::Bool::Bool()	16	static
 ../Core/Inc/std_msgs/Bool.h:23:17:virtual int std_msgs::Bool::serialize(unsigned char*) const	24	static
 ../Core/Inc/std_msgs/Bool.h:36:17:virtual int std_msgs::Bool::deserialize(unsigned char*)	24	static
@@ -50,6 +55,7 @@
 ../Core/Inc/pid.h:278:7:void PID::EnableProportionalFilter(bool)	16	static
 ../Core/Inc/ros/node_handle.h:50:7:constexpr ros::NodeHandleBase_::NodeHandleBase_()	16	static
 ../Core/Inc/ros/node_handle.h:107:7:constexpr ros::NodeHandle_<STM32Hardware>::NodeHandle_()	16	static
+<<<<<<< Updated upstream
 ../Core/Src/mainpp.cpp:151:6:void HAL_UART_TxCpltCallback(UART_HandleTypeDef*)	16	static
 ../Core/Src/mainpp.cpp:155:6:void HAL_UART_RxCpltCallback(UART_HandleTypeDef*)	16	static
 ../Core/Src/mainpp.cpp:159:6:void command_speed_callback(const std_msgs::Float32&)	16	static
@@ -70,6 +76,27 @@
 ../Core/Src/mainpp.cpp:519:6:void drive_pwm(float)	24	static
 ../Core/Src/mainpp.cpp:536:6:bool isClose(double, double)	40	static
 ../Core/Src/mainpp.cpp:543:7:float readADC()	16	static
+=======
+../Core/Src/mainpp.cpp:159:6:void HAL_UART_TxCpltCallback(UART_HandleTypeDef*)	16	static
+../Core/Src/mainpp.cpp:163:6:void HAL_UART_RxCpltCallback(UART_HandleTypeDef*)	16	static
+../Core/Src/mainpp.cpp:167:6:void command_speed_callback(const std_msgs::Float32&)	16	static
+../Core/Src/mainpp.cpp:171:6:void command_steer_callback(const std_msgs::Float32&)	16	static
+../Core/Src/mainpp.cpp:175:6:void command_stop_callback(const std_msgs::Float32&)	16	static
+../Core/Src/mainpp.cpp:179:6:void command_pos_callback(const std_msgs::Float32&)	16	static
+../Core/Src/mainpp.cpp:184:6:void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*)	32	static
+../Core/Src/mainpp.cpp:291:6:void HAL_GPIO_EXTI_Callback(uint16_t)	16	static
+../Core/Src/mainpp.cpp:330:6:void setup()	16	static
+../Core/Src/mainpp.cpp:384:6:void loop()	8	static
+../Core/Src/mainpp.cpp:416:6:void stop(float)	16	static
+../Core/Src/mainpp.cpp:431:6:void speed(float)	16	static
+../Core/Src/mainpp.cpp:449:6:void steer(float)	24	static
+../Core/Src/mainpp.cpp:461:6:void position(float)	16	static
+../Core/Src/mainpp.cpp:473:6:void drive_pwm(float)	24	static
+../Core/Src/mainpp.cpp:490:6:bool isClose(double, double)	40	static
+../Core/Src/mainpp.cpp:497:7:float readADC()	16	static
+../Core/Src/mainpp.cpp:516:17:void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef*)	16	static
+../Core/Src/mainpp.cpp:522:17:void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef*)	16	static
+>>>>>>> Stashed changes
 ../Core/Inc/ros/msg.h:188:15:static void ros::Msg::varToArr(A, V) [with A = unsigned char*; V = long unsigned int]	24	static
 ../Core/Inc/ros/msg.h:196:15:static void ros::Msg::arrToVar(V&, A) [with V = long unsigned int; A = unsigned char*]	24	static
 ../Core/Inc/ros/subscriber.h:44:7:ros::Subscriber_::Subscriber_()	16	static
@@ -89,6 +116,7 @@
 ../Core/Inc/ros/node_handle.h:380:8:void ros::NodeHandle_<Hardware, MAX_SUBSCRIBERS, MAX_PUBLISHERS, INPUT_SIZE, OUTPUT_SIZE>::setNow(const ros::Time&) [with Hardware = STM32Hardware; int MAX_SUBSCRIBERS = 25; int MAX_PUBLISHERS = 25; int INPUT_SIZE = 1024; int OUTPUT_SIZE = 1024]	24	static
 ../Core/Inc/ros/node_handle.h:534:8:void ros::NodeHandle_<Hardware, MAX_SUBSCRIBERS, MAX_PUBLISHERS, INPUT_SIZE, OUTPUT_SIZE>::logerror(const char*) [with Hardware = STM32Hardware; int MAX_SUBSCRIBERS = 25; int MAX_PUBLISHERS = 25; int INPUT_SIZE = 1024; int OUTPUT_SIZE = 1024]	16	static
 ../Core/Inc/ros/node_handle.h:513:8:void ros::NodeHandle_<Hardware, MAX_SUBSCRIBERS, MAX_PUBLISHERS, INPUT_SIZE, OUTPUT_SIZE>::log(char, const char*) [with Hardware = STM32Hardware; int MAX_SUBSCRIBERS = 25; int MAX_PUBLISHERS = 25; int INPUT_SIZE = 1024; int OUTPUT_SIZE = 1024]	40	static
+<<<<<<< Updated upstream
 ../Core/Src/mainpp.cpp:557:1:void __static_initialization_and_destruction_0()	16	static
 ../Core/Inc/ros/subscriber.h:114:16:void ros::Subscriber<MsgT, void>::callback(unsigned char*) [with MsgT = std_msgs::Bool]	16	static
 ../Core/Inc/ros/subscriber.h:128:15:int ros::Subscriber<MsgT, void>::getEndpointType() [with MsgT = std_msgs::Bool]	16	static
@@ -98,8 +126,15 @@
 ../Core/Inc/ros/subscriber.h:128:15:int ros::Subscriber<MsgT, void>::getEndpointType() [with MsgT = std_msgs::UInt8]	16	static
 ../Core/Inc/ros/subscriber.h:120:24:const char* ros::Subscriber<MsgT, void>::getMsgType() [with MsgT = std_msgs::UInt8]	16	static
 ../Core/Inc/ros/subscriber.h:124:24:const char* ros::Subscriber<MsgT, void>::getMsgMD5() [with MsgT = std_msgs::UInt8]	16	static
+=======
+../Core/Src/mainpp.cpp:526:1:void __static_initialization_and_destruction_0()	16	static
+>>>>>>> Stashed changes
 ../Core/Inc/ros/subscriber.h:114:16:void ros::Subscriber<MsgT, void>::callback(unsigned char*) [with MsgT = std_msgs::Float32]	16	static
 ../Core/Inc/ros/subscriber.h:128:15:int ros::Subscriber<MsgT, void>::getEndpointType() [with MsgT = std_msgs::Float32]	16	static
 ../Core/Inc/ros/subscriber.h:120:24:const char* ros::Subscriber<MsgT, void>::getMsgType() [with MsgT = std_msgs::Float32]	16	static
 ../Core/Inc/ros/subscriber.h:124:24:const char* ros::Subscriber<MsgT, void>::getMsgMD5() [with MsgT = std_msgs::Float32]	16	static
+<<<<<<< Updated upstream
 ../Core/Src/mainpp.cpp:557:1:cpp)	8	static
+=======
+../Core/Src/mainpp.cpp:526:1:cpp)	8	static
+>>>>>>> Stashed changes

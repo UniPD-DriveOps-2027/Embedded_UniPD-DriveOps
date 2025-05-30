@@ -15,14 +15,14 @@
 
 uint8_t VL6180X_WriteReg(uint8_t sensor_addr, uint16_t reg, uint8_t value) {
 	uint8_t data[3] = { (reg >> 8) & 0xFF, reg & 0xFF, value };
-	return HAL_I2C_Master_Transmit(&hi2c1, sensor_addr << 1, data, 3, 100);
+	return HAL_I2C_Master_Transmit_DMA(&hi2c1, sensor_addr << 1, data, 3);
 }
 
 uint8_t VL6180X_ReadReg(uint8_t sensor_addr, uint16_t reg) {
 	uint8_t tx_data[2] = { (reg >> 8) & 0xFF, reg & 0xFF };
 	uint8_t rx_data = 0;
-	HAL_I2C_Master_Transmit(&hi2c1, sensor_addr << 1, tx_data, 2, 100);
-	HAL_I2C_Master_Receive(&hi2c1, (sensor_addr << 1) | 0x01, &rx_data, 1, 100);
+	HAL_I2C_Master_Transmit_DMA(&hi2c1, sensor_addr << 1, tx_data, 2);
+	HAL_I2C_Master_Receive_DMA(&hi2c1, (sensor_addr << 1) | 0x01, &rx_data, 1);
 	return rx_data;
 }
 

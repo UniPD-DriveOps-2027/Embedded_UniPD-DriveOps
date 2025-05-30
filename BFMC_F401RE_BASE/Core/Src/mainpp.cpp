@@ -8,6 +8,7 @@
 #include <mainpp.h>
 #include <ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/UInt8.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
 #include "pid.h"
@@ -55,6 +56,7 @@ extern TIM_HandleTypeDef htim11;
 extern ADC_HandleTypeDef hadc1;
 
 
+
 ros::NodeHandle nh;
 // REFERENCE variables
 double speedTarget=0.0, speedTargetPos=0.0, speedRef=0.0; // [m/s], [m/s]: speed references
@@ -79,6 +81,7 @@ bool flagLed = false;
 uint8_t counter;
 float input,output,setpoint;
 float KP=0.020001, KI=0.025001, KD=0.0;
+
 
 //Finite Impulse Response filter
 float32_t fir_coefficients[FIR_LENGHT] = {
@@ -396,6 +399,7 @@ void setup(void)
 	// pwm for leds
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
+
 	// stop the car
 	speedTarget = 0.0;
 	speedRef 	= 0.0;
@@ -555,3 +559,4 @@ float readADC(void)
 
 	return scaled_value;
 }
+

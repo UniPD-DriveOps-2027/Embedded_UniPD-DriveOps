@@ -116,7 +116,7 @@ int main(void)
 	//setupIMU();
 
 	printf("%s", msg);
-	printf("Start ROS setup... \r\n");
+	printf("Start ROS setup daje... \r\n");
 	setup();
 
   /* USER CODE END 2 */

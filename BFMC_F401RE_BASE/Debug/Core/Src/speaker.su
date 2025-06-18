@@ -1,6 +1,0 @@
-../Core/Src/speaker.c:13:6:playTone	24	static
-../Core/Src/speaker.c:28:6:playMelody	24	static
-../Core/Src/speaker.c:39:6:policeSiren	32	static
-../Core/Src/speaker.c:52:6:playClick	16	static
-../Core/Src/speaker.c:59:6:playOdeToJoy	128	static
-../Core/Src/speaker.c:74:6:playInTheEnd	80	static

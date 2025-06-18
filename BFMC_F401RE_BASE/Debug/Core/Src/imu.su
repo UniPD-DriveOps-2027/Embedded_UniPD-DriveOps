@@ -1,8 +1,0 @@
-../Core/Inc/bno055_stm32.h:20:6:void bno055_assignI2C(I2C_HandleTypeDef*)	16	static
-../Core/Inc/bno055_stm32.h:24:6:void bno055_delay(int)	16	static
-../Core/Inc/bno055_stm32.h:32:6:void bno055_writeData(uint8_t, uint8_t)	40	static
-../Core/Inc/bno055_stm32.h:96:6:void bno055_readData(uint8_t, uint8_t*, uint8_t)	24	static
-../Core/Src/imu.cpp:23:6:void setupIMU()	8	static
-../Core/Src/imu.cpp:33:6:void performCalibrationProcedure()	48	static
-../Core/Src/imu.cpp:57:6:bool isFullyCalibrated(bno055_calibration_state_t)	16	static
-../Core/Src/imu.cpp:61:6:void imuTimerCallback()	16	static

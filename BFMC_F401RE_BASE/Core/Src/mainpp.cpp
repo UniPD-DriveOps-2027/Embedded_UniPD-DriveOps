@@ -25,7 +25,7 @@
 #include "speaker.h"
 
 // Constants
-#define TRANSMISSION_RATIO 		14.6 			//16	// both wheels placed on the ground are rotating at 1/16th of the motor's speed
+#define TRANSMISSION_RATIO 		14.6 / 2		// 16/2	// both wheels placed on the ground are rotating at 1/16th of the motor's speed
 #define STEER_DEG2PWM_RATIO 	0.0009505		// [deg] -> [pwm]
 #define STEER_DEG2PWM_OFFSET	0.07620			// [pwm]
 #define MOTOR_SPEED_OFFSET 		0.075568        // [pwm]: The zero default where motors are stop
@@ -43,10 +43,13 @@
 #define EPSILON					0.01			//
 //#define EPSILON_DIFF			0.001			//
 
+// Filter
 #define FIR_LENGHT 		 		13
 
+
+
 // timers defined in main.c so get them as extern
-extern TIM_HandleTypeDef htim1;
+//extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
@@ -145,7 +148,7 @@ ros::Subscriber<std_msgs::Float32> speed_sub("automobile/command/speed", &comman
 ros::Subscriber<std_msgs::Float32> steer_sub("automobile/command/steer", &command_steer_callback);
 ros::Subscriber<std_msgs::Float32> stop_sub("automobile/command/stop", &command_stop_callback);
 ros::Subscriber<std_msgs::Float32> pos_sub("automobile/command/position", &command_pos_callback);
-ros::Subscriber<std_msgs::UInt8> speaker_sub("automobile/speaker", &speaker_callback);
+//ros::Subscriber<std_msgs::UInt8> speaker_sub("automobile/speaker", &speaker_callback);
 ros::Subscriber<std_msgs::Bool> checkEmergencyBrakeArena_sub("automobile/arena", &checkEmergencyBrakeArena_callback);
 ros::Subscriber<std_msgs::Bool> leds_sub("automobile/leds", &leds_callback);
 
@@ -177,7 +180,7 @@ void command_pos_callback(const std_msgs::Float32& msg){
 
 void speaker_callback(const std_msgs::UInt8& msg){
 	// Enable sound
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
 
 	if (msg.data == 1) {
 		playOdeToJoy();
@@ -187,7 +190,7 @@ void speaker_callback(const std_msgs::UInt8& msg){
 	}
 
 	// Disable sound
-	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
 }
 
 void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg){
@@ -196,6 +199,12 @@ void checkEmergencyBrakeArena_callback(const std_msgs::Bool& msg){
 
 void leds_callback(const std_msgs::Bool& msg){
 	flagLed = msg.data;
+	// turn on/off leds
+	if (flagLed) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+	} else {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	}
 }
 
 
@@ -205,7 +214,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		double DT = ((ENC_COUNT_MAX + 1) / 1e6); //0.001s  [s]
 		// ---------- ENCODER SPEED ----------
-		encoderCount = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);	// (int16_t) cast to [-2^15 ; 2^15]
+		encoderCount = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);	// (int16_t) cast to [-2^15 ; 2^15]
+		__HAL_TIM_SET_COUNTER(&htim3,0);
 		motorSpeed = ((double)encoderCount / 1024.0) / DT; 		// [rps]: motor speed
 		fir_in_arm = (float32_t)motorSpeed;
 		arm_fir_f32(&fir_instance, &fir_in_arm, &fir_out_arm,1);
@@ -274,29 +284,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//setpoint=(float)localDistanceRef;
 
 		// ---------- RESET ENCODER COUNTER ----------
-		__HAL_TIM_SET_COUNTER(&htim4,0);
+		//__HAL_TIM_SET_COUNTER(&htim3,0);
 
 	}
 
 	if(htim == &htim10){  //every 10ms
 		pub_flag = true;
 
+		/* For TOF sensors */
+
 		TenMsCounter++;
-	}
 
-	/* For TOF sensors */
-
-	if (TenMsCounter == 1){
-		/* at millisecond 10 prepare sensor to read values */
-		VL6180X_SendMsgToRead(&sensorsTOF[0]);
+		if (TenMsCounter == 1){
+			/* at millisecond 10 prepare sensor to read values */
+			VL6180X_SendMsgToRead(&sensorsTOF[0]);
+		} else if (TenMsCounter == 8){
+			/* at millisecond 70 read values */
+			VL6180X_ReadDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+			//VL6180X_PrintAllDistances(&sensorsTOF[0]);
+			TenMsCounter = 0; // Reset counter
+		}
 	}
-	if (TenMsCounter == 8){
-		/* at millisecond 70 read values */
-		VL6180X_ReadDistances(&sensorsTOF[0], &TOFcounterToInitialize);
-		//VL6180X_PrintAllDistances(&sensorsTOF[0]);
-		TenMsCounter = 0; // Reset counter
-	}
-
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
@@ -342,21 +350,22 @@ void setup(void)
 {
 	// Initialize the node ...
 	nh.initNode();
-	// ... advertise publishers ...
-	nh.advertise(carSpeed_pub);
-	nh.advertise(globalDistance_pub);
-	nh.advertise(posFeedback_pub);
-	nh.advertise(VL6180X_front_pub);
-	nh.advertise(VL6180X_left_pub);
 
 	// ... and declare subscribers
 	nh.subscribe(speed_sub);
 	nh.subscribe(steer_sub);
 	nh.subscribe(stop_sub);
 	nh.subscribe(pos_sub);
-	nh.subscribe(speaker_sub);
+	//nh.subscribe(speaker_sub);
 	nh.subscribe(checkEmergencyBrakeArena_sub);
 	nh.subscribe(leds_sub);
+
+	// ... advertise publishers ...
+	nh.advertise(carSpeed_pub);
+	nh.advertise(globalDistance_pub);
+	nh.advertise(posFeedback_pub);
+	nh.advertise(VL6180X_front_pub);
+	nh.advertise(VL6180X_left_pub);
 
 	// Set PID SPEED controller parameters
 	SpeedController.SetMode(_PID_MODE_AUTOMATIC);// AUTOMATIC MODE
@@ -372,31 +381,24 @@ void setup(void)
 	PositionController.SetSampleTime(samplingPID);// set sample time in [ms]
 	PositionController.EnableProportionalFilter(false);
 
-
 	//initialize the filter
 	arm_fir_init_f32(&fir_instance, FIR_LENGHT, fir_coefficients, fir_state, 1);
 
 	// VL6180X TOF sensors initialization
 	VL6180X_Setup(&sensorsTOF[0]);
 	VL6180X_i2c_Init(&sensorsTOF[0]);
-	VL6180X_ReadAllDistances(&sensorsTOF[0], &TOFcounterToInitialize);
+	VL6180X_ReadAllDistancesPolling(&sensorsTOF[0], &TOFcounterToInitialize);
 	if (TOFcounterToInitialize != 0){
 		printf("Error initializig TOF sensors! \r\n");
 	}
 
 	// Start TIMERS
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// DC MOTOR PWM
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);// SERVO PWM
-	HAL_TIM_Base_Start(&htim4);// ENCODER COUNTER
-	HAL_TIM_Base_Start_IT(&htim11);// ENCODER SPEED AND SPEED CONTROL
-	HAL_TIM_Base_Start_IT(&htim10);// PUBLISH TIMER
-	HAL_TIM_Base_Start(&htim1);// SPEAKER AND LEDS TIMER
-
-
-
-	// pwm for leds
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // DC MOTOR PWM
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // SERVO PWM
+	HAL_TIM_Base_Start(&htim4); // LED and SPEAKERS
+	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+	HAL_TIM_Base_Start_IT(&htim11); // PID SPEED CONTROL
+	HAL_TIM_Base_Start_IT(&htim10); // PUBLISH TIMER
 
 	// stop the car
 	speedTarget = 0.0;
@@ -412,14 +414,24 @@ void loop(void)
 	// read line detection sensor
 	//adcValue = readADC();
 
-	if (nh.connected())
-	{
-		if (pub_flag)
-		{
-			// ---------- PUBLISH ----------
-			carSpeed_msg.data = carSpeed;
-			carSpeed_pub.publish(&carSpeed_msg);
+	/*
+	printf("sensorsTOF[1].distance (front): %d \r\n", sensorsTOF[1].distance);
+	printf("sensorsTOF[0].distance (left): %d \r\n", sensorsTOF[0].distance);
+	HAL_Delay(500);
+	printf("-------------------\n");
 
+	// in case of hot swap of TOF
+	if (TOFcounterToInitialize > VL6180X_REINITIALIZE_COUNTER){
+		TOFcounterToInitialize = 0;
+		VL6180X_i2c_Init(&sensorsTOF[0]);
+	}
+	*/
+
+	if (nh.connected()) {
+		if (pub_flag) {
+			// ---------- PUBLISH ----------
+			carSpeed_msg.data = carSpeedfiltered;
+			carSpeed_pub.publish(&carSpeed_msg);
 
 			globalDistance_msg.data = globalDistance;
 			globalDistance_pub.publish(&globalDistance_msg);
@@ -429,20 +441,20 @@ void loop(void)
 				posFeedback_msg.data = reachedPosition;
 				posFeedback_pub.publish(&posFeedback_msg);
 				posAckDone = true;
-
 			}
+
+			//this fixed the error of message length at initialization
 
 			VL6180X_front_msg.data = sensorsTOF[1].distance;
 			VL6180X_front_pub.publish(&VL6180X_front_msg);
+			//printf("sensorsTOF[1].distance (front): %d \r\n", sensorsTOF[1].distance);
+
 			VL6180X_left_msg.data = sensorsTOF[0].distance;
 			VL6180X_left_pub.publish(&VL6180X_left_msg);
+			//printf("sensorsTOF[0].distance (left): %d \r\n", sensorsTOF[0].distance);
 
-			// turn on/off leds
-			if (flagLed) {
-				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 900);
-			} else {
-				__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
-			}
+			//HAL_Delay(500);
+			//printf("-------------------\n");
 
 			pub_flag = false;
 
@@ -531,7 +543,7 @@ void drive_pwm(float pwm_value){
 	float duty_cycle = (pwm_value + MOTOR_SPEED_OFFSET);
 
 	// Convert duty cycle to pulse width and set the PWM value
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, (uint32_t)(duty_cycle * MOT_PWM_COUNT_MAX));
+	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, (uint32_t)(duty_cycle * MOT_PWM_COUNT_MAX));
 }
 
 bool isClose(double A, double B)

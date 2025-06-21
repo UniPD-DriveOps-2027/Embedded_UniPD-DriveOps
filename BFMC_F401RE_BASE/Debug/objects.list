@@ -17,7 +17,6 @@
 "./Core/Src/time.o"
 "./Core/Src/usart.o"
 "./Core/Src/vl6180.o"
-"./Core/Src/vl6180_dual_dma.o"
 "./Core/Startup/startup_stm32f401retx.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.o"

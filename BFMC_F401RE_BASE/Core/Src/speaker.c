@@ -12,17 +12,17 @@
 
 void playTone(uint32_t frequency_hz, uint32_t duration_ms) {
 	if(frequency_hz == NOTE_REST) {
-		htim1.Instance->CCR1 = 0;  // Silence
+		htim4.Instance->CCR1 = 0;  // Silence
 		HAL_Delay(duration_ms);
 		return;
 	}
 
 	uint32_t period = (1000000 / frequency_hz) - 1;  // 1MHz timer clock
 
-	htim1.Instance->ARR = period;
-	htim1.Instance->CCR1 = period / 2;  // 50% duty cycle
+	htim4.Instance->ARR = period;
+	htim4.Instance->CCR1 = period / 2;  // 50% duty cycle
 	HAL_Delay(duration_ms);
-	htim1.Instance->CCR1 = 0;  // Silence
+	htim4.Instance->CCR1 = 0;  // Silence
 }
 
 void playMelody(const uint16_t melody[][2], uint16_t notes, uint16_t tempo) {
@@ -31,7 +31,7 @@ void playMelody(const uint16_t melody[][2], uint16_t notes, uint16_t tempo) {
 		playTone(melody[i][0], duration);
 
 		// Short pause between notes (20% of note duration)
-		htim1.Instance->CCR1 = 0;
+		htim4.Instance->CCR1 = 0;
 		HAL_Delay(duration / 5);
 	}
 }
@@ -50,9 +50,9 @@ void policeSiren(uint32_t cycles) {
 }
 
 void playClick(uint32_t duration_ms) {
-	htim1.Instance->CCR1 = 10;  // Very short pulse
+	htim4.Instance->CCR1 = 10;  // Very short pulse
 	HAL_Delay(duration_ms);
-	htim1.Instance->CCR1 = 0;
+	htim4.Instance->CCR1 = 0;
 }
 
 

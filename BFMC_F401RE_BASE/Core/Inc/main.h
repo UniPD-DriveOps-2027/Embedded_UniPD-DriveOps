@@ -57,7 +57,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PUB_COUNT_MAX 9999
+#define PUB_COUNT_MAX 14999
 #define SERVO_PWM_COUNT_MAX 39999
 #define SERVO_PRESCALER 41
 #define ENC_COUNT_MAX 999
@@ -77,10 +77,14 @@ void Error_Handler(void);
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_5
-#define LD2_GPIO_Port GPIOA
-#define MOTOR_PWM_Pin GPIO_PIN_6
-#define MOTOR_PWM_GPIO_Port GPIOC
+#define LEDS_IO_Pin GPIO_PIN_5
+#define LEDS_IO_GPIO_Port GPIOA
+#define EncoderA_Pin GPIO_PIN_6
+#define EncoderA_GPIO_Port GPIOA
+#define EncoderB_Pin GPIO_PIN_7
+#define EncoderB_GPIO_Port GPIOA
+#define MOTOR_PWM_Pin GPIO_PIN_10
+#define MOTOR_PWM_GPIO_Port GPIOB
 #define VL6180X_2_SHUT_Pin GPIO_PIN_8
 #define VL6180X_2_SHUT_GPIO_Port GPIOC
 #define VL6180X_1_SHUT_Pin GPIO_PIN_9
@@ -91,10 +95,10 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define ENCODER_CHB_Pin GPIO_PIN_6
-#define ENCODER_CHB_GPIO_Port GPIOB
-#define ENCODER_CHA_Pin GPIO_PIN_7
-#define ENCODER_CHA_GPIO_Port GPIOB
+#define SPEAKER_PWM_Pin GPIO_PIN_6
+#define SPEAKER_PWM_GPIO_Port GPIOB
+#define LED_PWM_Pin GPIO_PIN_7
+#define LED_PWM_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

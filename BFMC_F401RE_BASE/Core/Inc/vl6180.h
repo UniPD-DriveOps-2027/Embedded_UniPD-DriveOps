@@ -55,8 +55,8 @@ typedef struct {
 /* Linear correction parameters (y = mx + q) */
 #define VL6180X_1_M  						0.97053299
 #define VL6180X_1_Q  						19.55846396
-#define VL6180X_2_M  						0.96133608
-#define VL6180X_2_Q  						0.36225924
+#define VL6180X_2_M  						0.60646845// old tof 0.96133608
+#define VL6180X_2_Q  						29.31900131// old tof 0.36225924
 
 /* Counter for reinitialize VL6180X sensor(s) */
 #define VL6180X_REINITIALIZE_COUNTER  		30*(NUMBER_OF_VL6180X_ID)
